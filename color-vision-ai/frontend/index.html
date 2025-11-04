@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Vision AI Testing System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+        }
+
+        .upload-area input {
+            display: none;
+        }
+
+        .upload-area-text {
+            font-size: 1.2em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .upload-area-hint {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .test-container {
+            margin-top: 30px;
+        }
+
+        .patch-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .patch {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: grab;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .patch:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .patch.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
+        }
+
+        .ordering-zone {
+            background: #f8f9ff;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 100px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .ordered-patches {
+            display: flex;
+            gap: 10px;
+            flex-wrap: nowrap;
+            align-items: center;
+            min-width: max-content;
+        }
+
+        .ordered-patch {
+            position: relative;
+            width: 60px;
+            height: 50px;
+            border-radius: 6px;
+            border: 2px solid #667eea;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .ordered-patch:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .patch-index {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-secondary {
+            background: #666;
+        }
+
+        .button-secondary:hover {
+            box-shadow: 0 6px 12px rgba(102, 102, 102, 0.4);
+        }
+
+        .results-container {
+            background: #f8f9ff;
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: white;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .result-value {
+            font-size: 2em;
+            color: #667eea;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .severity-mild {
+            color: #4CAF50;
+        }
+
+        .severity-moderate {
+            color: #FF9800;
+        }
+
+        .severity-severe {
+            color: #F44336;
+        }
+
+        .recommendation {
+            background: #fff3e0;
+            border-left: 4px solid #FF9800;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .probability-bar {
+            margin: 15px 0;
+        }
+
+        .probability-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .probability-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 25px;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .patch-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 D-15 Color Vision AI Testing System</h1>
+            <p>Upload an image and arrange 15 color patches to test your color perception with similar hues</p>
+        </div>
+
+        <!-- Step 1: Upload Image -->
+        <div class="section" id="upload-section">
+            <div class="section-title">Step 1: Upload an Image</div>
+            <div class="upload-area" id="upload-area">
+                <div class="upload-area-text">📸 Drop your image here or click to select</div>
+                <div class="upload-area-hint">Supported: JPG, PNG, WebP (any natural image)</div>
+                <input type="file" id="file-input" accept="image/*">
+            </div>
+            <div id="upload-error" class="error-message hidden"></div>
+            <div id="upload-loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Extracting colors and generating test...</p>
+            </div>
+        </div>
+
+        <!-- Step 2: Take Test -->
+        <div class="section hidden" id="test-section">
+            <div class="section-title">Step 2: Arrange the Colors</div>
+            <div class="info-text">
+                Drag and drop the 15 color patches below to arrange them in the order you think is correct.
+                This D-15 test evaluates your color perception accuracy with similar hues and shades.
+            </div>
+            
+            <div class="test-container">
+                <div style="margin-bottom: 20px;">
+                    <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">Available Colors:</div>
+                    <div class="patch-grid" id="patch-grid"></div>
+                </div>
+
+                <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">Your Order:</div>
+                <div class="ordering-zone" id="ordering-zone">
+                    <div class="ordered-patches" id="ordered-patches"></div>
+                </div>
+            </div>
+
+            <div id="test-error" class="error-message hidden"></div>
+
+            <div class="button-group">
+                <button class="button" id="submit-btn" disabled>Submit Response</button>
+                <button class="button button-secondary" id="reset-btn">Reset</button>
+                <button class="button button-secondary" id="upload-new-btn">Upload New Image</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div class="section hidden" id="results-section">
+            <div class="section-title">Step 3: Your Results</div>
+            
+            <div class="results-container">
+                <div class="result-card">
+                    <div class="result-title">Color Vision Type</div>
+                    <div class="result-value" id="result-class">--</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-title">Accuracy Score</div>
+                    <div class="result-value" id="result-accuracy">--%</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-title">Severity</div>
+                    <div class="result-value" id="result-severity" style="font-size: 1.2em;">--</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-title">Confidence</div>
+                    <div id="result-confidence" class="chart-container"></div>
+                </div>
+
+                <div id="result-recommendation" class="recommendation hidden"></div>
+            </div>
+
+            <div class="button-group">
+                <button class="button" id="test-again-btn">Take Test Again</button>
+                <button class="button" id="distractor-btn">Try Harder Test (Distractors)</button>
+                <button class="button" id="luminance-btn">Try Luminance Test</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let sessionId = null;
+        let testSpec = null;
+        let userOrder = [];
+        let draggedElement = null;
+
+        // DOM elements
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadSection = document.getElementById('upload-section');
+        const testSection = document.getElementById('test-section');
+        const resultsSection = document.getElementById('results-section');
+        const patchGrid = document.getElementById('patch-grid');
+        const orderingZone = document.getElementById('ordering-zone');
+        const submitBtn = document.getElementById('submit-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const uploadNewBtn = document.getElementById('upload-new-btn');
+        const testAgainBtn = document.getElementById('test-again-btn');
+        const distractorBtn = document.getElementById('distractor-btn');
+        const luminanceBtn = document.getElementById('luminance-btn');
+
+        const API_BASE = 'http://localhost:8000';
+
+        // Upload handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        async function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Show loading
+            document.getElementById('upload-loading').classList.remove('hidden');
+            document.getElementById('upload-error').classList.add('hidden');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                console.log('Uploading file:', file.name, file.type, file.size);
+
+                const response = await fetch(`${API_BASE}/upload-image`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error('Error response:', errorData);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorData}`);
+                }
+
+                const data = await response.json();
+                sessionId = data.session_id;
+                testSpec = data.test_spec;
+
+                showTestSection();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('upload-error').textContent = `Error: ${error.message}`;
+                document.getElementById('upload-error').classList.remove('hidden');
+            } finally {
+                document.getElementById('upload-loading').classList.add('hidden');
+            }
+        }
+
+        function showTestSection() {
+            uploadSection.classList.add('hidden');
+            testSection.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            userOrder = [];
+            renderPatchGrid();
+        }
+
+        function renderPatchGrid() {
+            patchGrid.innerHTML = '';
+            orderingZone.innerHTML = '';
+
+            testSpec.patch_configs.forEach((config, index) => {
+                const rgb = config.rgb;
+                const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+
+                const patch = document.createElement('div');
+                patch.className = 'patch';
+                patch.style.backgroundColor = color;
+                patch.draggable = true;
+                patch.dataset.colorIndex = config.color_index;
+                patch.dataset.rgb = JSON.stringify(rgb);
+
+                patch.addEventListener('dragstart', (e) => {
+                    draggedElement = patch;
+                    patch.classList.add('dragging');
+                });
+
+                patch.addEventListener('dragend', () => {
+                    patch.classList.remove('dragging');
+                });
+
+                patchGrid.appendChild(patch);
+            });
+
+            orderingZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                orderingZone.style.backgroundColor = '#e8ebff';
+            });
+
+            orderingZone.addEventListener('dragleave', () => {
+                orderingZone.style.backgroundColor = '#f8f9ff';
+            });
+
+            orderingZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                orderingZone.style.backgroundColor = '#f8f9ff';
+                if (draggedElement && draggedElement.parentElement === patchGrid) {
+                    addToOrder(draggedElement);
+                }
+            });
+        }
+
+        function addToOrder(patch) {
+            const colorIndex = parseInt(patch.dataset.colorIndex);
+            
+            // Prevent duplicate colors - only add if not already in order
+            if (!userOrder.includes(colorIndex)) {
+                userOrder.push(colorIndex);
+                renderOrderingZone();
+                submitBtn.disabled = userOrder.length !== testSpec.n_colors;
+            }
+        }
+
+        function renderOrderingZone() {
+            const orderedPatchesContainer = document.getElementById('ordered-patches');
+            orderedPatchesContainer.innerHTML = '';
+            userOrder.forEach((colorIndex, position) => {
+                const config = testSpec.patch_configs.find(c => c.color_index === colorIndex);
+                const rgb = config.rgb;
+                const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+
+                const orderedPatch = document.createElement('div');
+                orderedPatch.className = 'ordered-patch';
+                orderedPatch.style.backgroundColor = color;
+
+                const index = document.createElement('div');
+                index.className = 'patch-index';
+                index.textContent = position + 1;
+                orderedPatch.appendChild(index);
+
+                orderedPatch.addEventListener('click', () => {
+                    // Click to remove this color from the sequence
+                    userOrder.splice(position, 1);
+                    renderOrderingZone();
+                    submitBtn.disabled = userOrder.length !== testSpec.n_colors;
+                });
+
+                orderedPatchesContainer.appendChild(orderedPatch);
+            });
+        }
+
+        submitBtn.addEventListener('click', submitResponse);
+
+        async function submitResponse() {
+            try {
+                const response = await fetch(`${API_BASE}/submit-response?session_id=${sessionId}&user_order=${JSON.stringify(userOrder)}`, {
+                    method: 'POST',
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('test-error').textContent = `Error: ${error.message}`;
+                document.getElementById('test-error').classList.remove('hidden');
+            }
+        }
+
+        function showResults(data) {
+            testSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+
+            const classification = data.classification;
+            const accuracy = data.accuracy_score;
+            const report = data.report;
+
+            document.getElementById('result-class').textContent = classification.predicted_class;
+            document.getElementById('result-accuracy').textContent = accuracy.toFixed(1) + '%';
+
+            const severityClass = `severity-${report.severity.toLowerCase()}`;
+            document.getElementById('result-severity').textContent = report.severity;
+            document.getElementById('result-severity').className = `result-value ${severityClass}`;
+
+            // Confidence bars
+            const confidenceDiv = document.getElementById('result-confidence');
+            confidenceDiv.innerHTML = '';
+
+            const probs = classification.class_probabilities;
+            Object.entries(probs).forEach(([className, prob]) => {
+                const bar = document.createElement('div');
+                bar.className = 'probability-bar';
+                bar.innerHTML = `
+                    <div class="probability-label">
+                        <span>${className}</span>
+                        <span>${(prob * 100).toFixed(1)}%</span>
+                    </div>
+                    <div style="background: #e0e0e0; height: 10px; border-radius: 4px; overflow: hidden;">
+                        <div class="probability-fill" style="width: ${prob * 100}%"></div>
+                    </div>
+                `;
+                confidenceDiv.appendChild(bar);
+            });
+
+            // Recommendation
+            const recDiv = document.getElementById('result-recommendation');
+            recDiv.textContent = report.recommendation;
+            recDiv.classList.remove('hidden');
+        }
+
+        resetBtn.addEventListener('click', () => {
+            userOrder = [];
+            renderPatchGrid();
+            submitBtn.disabled = true;
+            document.getElementById('test-error').classList.add('hidden');
+        });
+
+        uploadNewBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            uploadSection.classList.remove('hidden');
+            testSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            sessionId = null;
+            testSpec = null;
+        });
+
+        testAgainBtn.addEventListener('click', () => {
+            showTestSection();
+        });
+
+        distractorBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/generate-distractor-test?session_id=${sessionId}`, {
+                    method: 'POST',
+                });
+                if (response.ok) {
+                    alert('Distractor test variant generated! (Feature expansion)');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        luminanceBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/generate-luminance-test?session_id=${sessionId}`, {
+                    method: 'POST',
+                });
+                if (response.ok) {
+                    alert('Luminance-equalized test variant generated! (Feature expansion)');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
