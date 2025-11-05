@@ -410,13 +410,6 @@
         <div class="header">
             <h1>🎨 D-15 Color Vision Test</h1>
             <p class="subtitle">AI-Powered Color Vision Analysis</p>
-            <div class="gemini-badge">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white"/>
-                    <path d="M2 17L12 22L22 17L12 12L2 17Z" fill="white" opacity="0.7"/>
-                </svg>
-                Powered by Google Gemini AI
-            </div>
         </div>
 
         <!-- Step 1: Upload -->
@@ -610,8 +603,11 @@
             uploadSection.classList.add('hidden');
             testSection.classList.remove('hidden');
             resultsSection.classList.add('hidden');
-            userOrder = new Array(testSpec.n_colors - 1).fill(null);
-            document.getElementById('total-count').textContent = testSpec.n_colors - 1;
+            
+            // ✅ Use full color count (no subtraction)
+            userOrder = new Array(testSpec.n_colors).fill(null);
+            document.getElementById('total-count').textContent = testSpec.n_colors;
+            
             renderPatchGrid();
         }
 
@@ -654,16 +650,6 @@
         function renderOrderingZone() {
             const container = document.getElementById('ordered-patches');
             container.innerHTML = '';
-
-            // Reference patch (fixed)
-            const refConfig = testSpec.reference_patch || testSpec.patch_configs[0];
-            const refRgb = refConfig.rgb;
-            const referencePatch = document.createElement('div');
-            referencePatch.className = 'ordered-patch';
-            referencePatch.style.backgroundColor = `rgb(${refRgb[0]}, ${refRgb[1]}, ${refRgb[2]})`;
-            referencePatch.innerHTML = '<div class="patch-index">REF</div>';
-            referencePatch.title = "Reference Color (Fixed)";
-            container.appendChild(referencePatch);
 
             // User slots
             for (let i = 0; i < userOrder.length; i++) {
@@ -737,7 +723,7 @@
         submitBtn.addEventListener('click', async () => {
             try {
                 // Prepend reference color (index 0)
-                const completeOrder = [testSpec.patch_configs[0].color_index, ...userOrder];
+                const completeOrder = userOrder;
                 
                 console.log('Submitting order:', completeOrder);
 
@@ -807,9 +793,7 @@
         }
 
         document.getElementById('reset-btn').onclick = () => {
-            userOrder = new Array(testSpec.n_colors - 1
-                
-            ).fill(null);
+            userOrder = new Array(testSpec.n_colors).fill(null);
             renderPatchGrid();
         };
 
