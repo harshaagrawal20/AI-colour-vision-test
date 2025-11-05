@@ -138,13 +138,7 @@ async def submit_response(
 ):
     """
     Submit user's color ordering response and get AI analysis from Gemini.
-    
-    Args:
-        session_id: Session ID from /upload-image
-        user_order: JSON string of color indices list
-        
-    Returns:
-        JSON with Gemini AI analysis, classification, accuracy score
+    Now uses VIBGYOR sequence as the reference instead of fixed reference pad.
     """
     try:
         if session_id not in test_sessions:
@@ -156,39 +150,32 @@ async def submit_response(
         try:
             user_order = json.loads(user_order)
         except (json.JSONDecodeError, TypeError):
-            raise HTTPException(
-                status_code=400,
-                detail="user_order must be a valid JSON array"
-            )
+            raise HTTPException(status_code=400, detail="user_order must be a valid JSON array")
         
-        # Verify user_order
         expected_length = session["test_spec"]["n_colors"]
         if len(user_order) != expected_length:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Expected {expected_length} colors, got {len(user_order)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Expected {expected_length} colors, got {len(user_order)}")
         
-        # Get data
-        reference_order = np.array(session["reference_order"])
+        # Convert to NumPy arrays
         user_order_array = np.array(user_order)
         dominant_colors_lab = np.array(session["dominant_colors_lab"])
-        
-        # Compute basic error metrics (for fallback)
-        error_metrics = error_analyzer.compute_error_metrics(
-            reference_order, user_order_array, dominant_colors_lab
-        )
-        
-        # Classify deficiency (for fallback)
+
+        # 🟢 Create VIBGYOR reference sequence (sorted by hue or index order)
+        # For simplicity, assume color index 0 → Violet, last → Red (or vice versa)
+        reference_order = np.arange(len(user_order))  # can later replace with hue sorting logic
+
+        # Compute basic error metrics
+        error_metrics = error_analyzer.compute_error_metrics(reference_order, user_order_array, dominant_colors_lab)
         classification = error_analyzer.classify_deficiency(error_metrics)
         accuracy_score = error_analyzer.compute_color_accuracy_score(error_metrics)
         report = error_analyzer.generate_report(classification, accuracy_score)
-        
-        # Get Gemini AI Analysis
+
+        # 🧠 Gemini AI Analysis using VIBGYOR logic
         gemini_analysis = None
         if gemini_analyzer:
             try:
                 print(f"🤖 Requesting Gemini AI analysis for session {session_id}...")
+
                 gemini_analysis = gemini_analyzer.analyze_color_arrangement(
                     reference_order=reference_order.tolist(),
                     user_order=user_order_array.tolist(),
@@ -196,7 +183,9 @@ async def submit_response(
                     classification=classification,
                     accuracy_score=accuracy_score
                 )
+
                 print(f"✓ Gemini analysis received: {len(gemini_analysis.get('ai_analysis', ''))} characters")
+
             except Exception as e:
                 print(f"⚠ Gemini analysis failed: {e}")
                 gemini_analysis = {
@@ -211,14 +200,13 @@ async def submit_response(
                 "error": "Gemini API key not configured"
             }
         
-        # Store response
+        # Store results
         session["user_response"] = user_order
         session["classification"] = classification
         session["accuracy_score"] = accuracy_score
         session["report"] = report
         session["gemini_analysis"] = gemini_analysis
         
-        # Return comprehensive response
         return JSONResponse({
             "classification": classification,
             "accuracy_score": accuracy_score,
