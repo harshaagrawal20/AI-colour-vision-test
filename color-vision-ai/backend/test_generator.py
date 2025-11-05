@@ -16,36 +16,35 @@ class TestGenerator:
         self.test_type = test_type
         self.color_extractor = ColorExtractor()
 
-    def generate_test(self, dominant_colors_lab, reference_index=None, reference_order=None):  # 🟢 NEW param reference_index
+    def generate_test(self, dominant_colors_lab, reference_index=None, reference_order=None):
         """
         Generate a color vision test from dominant colors in LAB space.
-        
-        Args:
-            dominant_colors_lab: (N, 3) array of colors in LAB space
-            reference_index: Index of reference pad color
-            reference_order: If None, use given order; else shuffle for user test
-            
-        Returns:
-            test_spec: Dictionary with test metadata and visual spec
         """
         n_colors = len(dominant_colors_lab)
-        
+
         if reference_order is None:
             reference_order = np.arange(n_colors)
-        
+
         # Shuffle order for user test
         user_order = np.random.permutation(n_colors)
-        
-        # 🟢 Fix the reference pad color at start if provided
-        if reference_index is not None and 0 <= reference_index < n_colors:
-            user_order = [reference_index] + [i for i in user_order if i != reference_index]
+
+        # --- 🟢 FIX: Safely handle reference_index type ---
+        if reference_index is not None:
+            if isinstance(reference_index, (list, np.ndarray)):
+                reference_index = int(np.ravel(reference_index)[0])  # Extract single integer
+            else:
+                reference_index = int(reference_index)
         else:
             reference_index = int(user_order[0])
+        # --------------------------------------------------
+
+        # Fix reference color at start
+        user_order = [reference_index] + [i for i in user_order if i != reference_index]
 
         # Convert LAB → RGB
         rgb_colors = self.color_extractor.lab_to_rgb(dominant_colors_lab)
-        
-        # 🟢 Extract reference pad color
+
+        # Extract reference pad color
         reference_pad_color_lab = dominant_colors_lab[reference_index]
         reference_pad_color_rgb = rgb_colors[reference_index]
 
@@ -56,13 +55,12 @@ class TestGenerator:
             "reference_colors_rgb": rgb_colors.tolist(),
             "reference_order": reference_order.tolist(),
             "user_test_order": [int(x) for x in user_order],
-            "reference_pad_index": int(reference_index),  # 🟢
-            "reference_pad_color_lab": reference_pad_color_lab.tolist(),  # 🟢
-            "reference_pad_color_rgb": reference_pad_color_rgb.tolist(),  # 🟢
+            "reference_pad_index": int(reference_index),
+            "reference_pad_color_lab": reference_pad_color_lab.tolist(),
+            "reference_pad_color_rgb": reference_pad_color_rgb.tolist(),
             "message": "Color vision test generated successfully"
         }
-        
-        # Patch configuration for frontend
+
         test_spec["patch_configs"] = [
             {
                 "color_index": int(idx),
@@ -72,8 +70,9 @@ class TestGenerator:
             }
             for idx in user_order
         ]
-        
+
         return test_spec
+
 
     def generate_distractor_test(self, dominant_colors_lab, n_distractors=3):
         """
