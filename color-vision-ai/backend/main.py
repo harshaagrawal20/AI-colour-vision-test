@@ -71,60 +71,62 @@ async def upload_image(file: UploadFile = File(...)):
         file: Image file (JPEG, PNG, etc.)
         
     Returns:
-        JSON with test_id, test_spec, and reference colors
+        JSON with session_id and extracted color test specification
     """
     try:
         # Validate file
         if not file:
             raise HTTPException(status_code=400, detail="No file provided")
-        
+
         if not file.filename:
             raise HTTPException(status_code=400, detail="File has no name")
-        
+
         # Read and validate image
         contents = await file.read()
-        
         if not contents:
             raise HTTPException(status_code=400, detail="File is empty")
-        
+
         try:
-            # Use cv2 to decode image from bytes
+            # Decode image from bytes
             nparr = np.frombuffer(contents, np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if image is None:
                 raise HTTPException(status_code=400, detail="Invalid image format")
-            # Convert BGR to RGB
             image_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
-        
+
         if image_array.size == 0:
             raise HTTPException(status_code=400, detail="Invalid image")
-        
-        # Extract dominant colors in LAB
+
+        # Extract dominant colors (LAB or RGB depending on extractor)
         dominant_colors_lab, labels, inertia = color_extractor.extract_dominant_colors(
             image_array, convert_to_lab=True, use_d15_shading=True
         )
-        
-        # Generate test
+
+        # Generate test specification (without reference pad)
         test_spec = test_generator.generate_test(dominant_colors_lab)
-        
+
+        # Remove reference pad related data if present
+        test_spec.pop("reference_order", None)
+        test_spec.pop("reference_colors", None)
+        test_spec.pop("reference_pad", None)
+
         # Store session
         session_id = f"session_{len(test_sessions)}"
         test_sessions[session_id] = {
             "test_spec": test_spec,
-            "reference_order": test_spec["reference_order"],
             "dominant_colors_lab": dominant_colors_lab.tolist(),
             "user_response": None,
             "classification": None,
         }
-        
+
         return JSONResponse({
             "session_id": session_id,
             "test_spec": test_spec,
-            "message": "Test generated successfully",
+            "message": "Test generated successfully (no reference pad used)",
         })
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
