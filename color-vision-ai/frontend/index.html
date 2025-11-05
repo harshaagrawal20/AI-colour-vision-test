@@ -701,6 +701,8 @@
                 }
             }
 
+            
+
             const placedCount = userOrder.filter(x => x !== null && x !== undefined && x >= 0).length;
             document.getElementById('progress-count').textContent = placedCount;
             submitBtn.disabled = placedCount !== userOrder.length;
@@ -805,7 +807,9 @@
         }
 
         document.getElementById('reset-btn').onclick = () => {
-            userOrder = new Array(testSpec.n_colors - 1).fill(null);
+            userOrder = new Array(testSpec.n_colors - 1
+                
+            ).fill(null);
             renderPatchGrid();
         };
 
@@ -822,3 +826,5 @@
     </script>
 </body>
 </html>
+
+
