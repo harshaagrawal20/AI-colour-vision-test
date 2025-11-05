@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Color Vision AI Testing System</title>
     <style>
         * {
@@ -939,6 +942,8 @@
         }
 
         function showResults(data) {
+            console.log('Full response data:', data); // Debug log
+            
             testSection.classList.add('hidden');
             resultsSection.classList.remove('hidden');
 
@@ -953,18 +958,31 @@
             const geminiSection = document.getElementById('gemini-analysis');
             const geminiContent = document.getElementById('gemini-content');
             
+            console.log('=== DISPLAY GEMINI ANALYSIS ===');
+            console.log('geminiData:', geminiData);
+            console.log('geminiData.success:', geminiData?.success);
+            console.log('geminiData.ai_analysis exists:', !!geminiData?.ai_analysis);
+            console.log('ai_analysis length:', geminiData?.ai_analysis?.length);
+            
             if (!geminiData) {
+                console.log('No geminiData - hiding section');
                 geminiSection.classList.add('hidden');
                 return;
             }
             
+            console.log('Removing hidden class from gemini section');
             geminiSection.classList.remove('hidden');
             
             if (geminiData.success && geminiData.ai_analysis) {
+                console.log('SUCCESS! Formatting and displaying AI analysis...');
                 // Format the AI analysis with markdown-like rendering
                 const formattedAnalysis = formatGeminiAnalysis(geminiData.ai_analysis);
+                console.log('Formatted HTML length:', formattedAnalysis.length);
                 geminiContent.innerHTML = formattedAnalysis;
+                console.log('Content inserted into DOM');
             } else {
+                console.log('FAILED - showing error message');
+                console.log('success:', geminiData.success, 'has ai_analysis:', !!geminiData.ai_analysis);
                 geminiContent.innerHTML = `
                     <div class="gemini-error">
                         <strong>⚠️ AI Analysis Unavailable</strong>
@@ -978,6 +996,7 @@
                     </div>
                 `;
             }
+            console.log('=== END DISPLAY ===');
         }
         
         function formatGeminiAnalysis(text) {
