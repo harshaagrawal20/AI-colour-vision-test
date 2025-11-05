@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Color Vision AI Testing System</title>
+    <title>D-15 Color Vision AI Test - Powered by Gemini</title>
     <style>
         * {
             margin: 0;
@@ -25,7 +22,7 @@
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 12px;
+            border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
         }
@@ -41,9 +38,22 @@
             margin-bottom: 10px;
         }
 
-        .header p {
+        .header .subtitle {
             color: #666;
             font-size: 1.1em;
+        }
+
+        .gemini-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #4285F4, #34A853, #FBBC04, #EA4335);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-top: 10px;
         }
 
         .section {
@@ -60,8 +70,8 @@
 
         .upload-area {
             border: 3px dashed #667eea;
-            border-radius: 8px;
-            padding: 40px;
+            border-radius: 12px;
+            padding: 50px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -71,26 +81,16 @@
         .upload-area:hover {
             border-color: #764ba2;
             background: #f0f2ff;
-        }
-
-        .upload-area.dragover {
-            border-color: #764ba2;
-            background: #e8ebff;
+            transform: translateY(-2px);
         }
 
         .upload-area input {
             display: none;
         }
 
-        .upload-area-text {
-            font-size: 1.2em;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .upload-area-hint {
-            color: #999;
-            font-size: 0.9em;
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
         }
 
         .hidden {
@@ -99,16 +99,15 @@
 
         .loading {
             text-align: center;
-            padding: 20px;
-            color: #667eea;
+            padding: 30px;
         }
 
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
@@ -118,113 +117,97 @@
             100% { transform: rotate(360deg); }
         }
 
-        .test-container {
-            margin-top: 30px;
-        }
-
         .patch-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             margin: 20px 0;
             justify-content: center;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 12px;
         }
 
         .patch {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
             cursor: grab;
-            border: 2px solid transparent;
+            border: 3px solid transparent;
             transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .patch:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            transform: scale(1.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
         }
 
-        .patch.dragging {
-            opacity: 0.7;
-            cursor: grabbing;
+        .patch.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .ordering-zone {
-            background: #f8f9ff;
-            border: 2px dashed #667eea;
-            border-radius: 8px;
-            padding: 15px;
-            min-height: 100px;
+            background: white;
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 120px;
             margin: 20px 0;
             overflow-x: auto;
         }
 
         .ordered-patches {
             display: flex;
-            gap: 8px;
-            flex-wrap: nowrap;
+            gap: 10px;
             align-items: center;
             min-width: max-content;
         }
 
         .ordered-patch {
-            position: relative;
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
-            border: 2px solid #667eea;
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            border: 3px solid #667eea;
             cursor: pointer;
             transition: all 0.2s ease;
-            flex-shrink: 0;
+            position: relative;
         }
 
         .ordered-patch:hover {
             transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
         }
 
         .empty-slot {
-            position: relative;
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
-            border: 2px dashed #667eea;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            border: 3px dashed #ccc;
+            background: #f5f5f5;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #667eea;
-            font-size: 0.7em;
+            color: #999;
+            font-size: 0.8em;
             font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .empty-slot:hover {
-            background: #f0f4ff;
-            border-color: #5566dd;
-        }
-
-        .empty-slot.drag-over {
             background: #e8f0ff;
-            border-color: #4455cc;
-            transform: scale(1.05);
-        }
-
-        .patch.used {
-            opacity: 0.3;
-            pointer-events: none;
-            cursor: not-allowed;
+            border-color: #667eea;
         }
 
         .patch-index {
             position: absolute;
             top: -8px;
             right: -8px;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             background: #667eea;
             color: white;
             border-radius: 50%;
@@ -233,137 +216,101 @@
             justify-content: center;
             font-size: 0.7em;
             font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 30px;
+            padding: 14px 32px;
             font-size: 1em;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             margin: 10px 5px;
+            font-weight: 600;
         }
 
-        .button:hover {
+        .button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
         }
 
         .button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
         .button-secondary {
-            background: #666;
+            background: linear-gradient(135deg, #6c757d, #5a6268);
         }
 
-        .button-secondary:hover {
-            box-shadow: 0 6px 12px rgba(102, 102, 102, 0.4);
-        }
-
-        .results-container {
-            background: #f8f9ff;
-            border-radius: 8px;
-            padding: 30px;
-            margin-top: 30px;
-        }
-
-        .result-card {
-            background: white;
-            border-left: 5px solid #667eea;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .result-title {
-            font-size: 1.3em;
-            color: #333;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        .result-value {
-            font-size: 2em;
-            color: #667eea;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .severity-mild {
-            color: #4CAF50;
-        }
-
-        .severity-moderate {
-            color: #FF9800;
-        }
-
-        .severity-severe {
-            color: #F44336;
-        }
-
-        .recommendation {
-            background: #fff3e0;
-            border-left: 4px solid #FF9800;
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 15px;
-            color: #555;
-            line-height: 1.6;
-        }
-
-        /* Gemini AI Analysis Styles */
         .gemini-analysis {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border: 2px solid #4285F4;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.1);
+            border: 3px solid #4285F4;
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 8px 24px rgba(66, 133, 244, 0.15);
         }
 
         .gemini-header {
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
             border-bottom: 2px solid #e0e0e0;
         }
 
-        .gemini-header h3 {
-            margin: 0;
+        .gemini-logo {
+            width: 32px;
+            height: 32px;
+        }
+
+        .gemini-header h2 {
             color: #1a73e8;
-            font-size: 1.3em;
-            font-weight: 600;
+            font-size: 1.6em;
+            margin: 0;
         }
 
         .gemini-content {
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            color: #333;
+            padding: 30px;
+            border-radius: 12px;
             line-height: 1.8;
-            font-size: 0.95em;
-            white-space: pre-wrap;
-            max-height: 600px;
+            color: #333;
+            max-height: 700px;
             overflow-y: auto;
+            font-size: 0.95em;
+        }
+
+        .gemini-content h2 {
+            color: #1a73e8;
+            font-size: 1.4em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8f0fe;
+        }
+
+        .gemini-content h3 {
+            color: #34A853;
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 10px;
         }
 
         .gemini-content h4 {
-            color: #1a73e8;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+            color: #FBBC04;
+            font-size: 1.05em;
+            margin-top: 15px;
+            margin-bottom: 8px;
         }
 
         .gemini-content ul {
-            margin-left: 20px;
+            margin-left: 25px;
             margin-bottom: 15px;
         }
 
@@ -371,82 +318,75 @@
             margin-bottom: 8px;
         }
 
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4285F4;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+        .gemini-content strong {
+            color: #1a73e8;
+            font-weight: 600;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .gemini-error {
-            color: #d32f2f;
-            padding: 15px;
-            background: #ffebee;
-            border-radius: 6px;
-            border-left: 4px solid #d32f2f;
-        }
-
-        .chart-container {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .probability-bar {
-            margin: 15px 0;
-        }
-
-        .probability-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-        }
-
-        .probability-fill {
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            height: 25px;
+        .gemini-content code {
+            background: #f0f0f0;
+            padding: 2px 6px;
             border-radius: 4px;
-            transition: width 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        .loading-gemini {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-gemini .spinner {
+            border-top-color: #4285F4;
+        }
+
+        .loading-gemini p {
+            color: #1a73e8;
+            font-size: 1.1em;
+            margin-top: 15px;
         }
 
         .error-message {
             background: #ffebee;
             color: #c62828;
-            padding: 15px;
-            border-radius: 6px;
+            padding: 20px;
+            border-radius: 8px;
             margin: 15px 0;
-            border-left: 4px solid #c62828;
+            border-left: 5px solid #c62828;
         }
 
         .success-message {
             background: #e8f5e9;
             color: #2e7d32;
-            padding: 15px;
-            border-radius: 6px;
+            padding: 20px;
+            border-radius: 8px;
             margin: 15px 0;
-            border-left: 4px solid #2e7d32;
+            border-left: 5px solid #2e7d32;
         }
 
-        .info-text {
-            color: #666;
+        .info-box {
+            background: #e3f2fd;
+            border-left: 5px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .info-box strong {
+            color: #1976D2;
+        }
+
+        .disclaimer {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
             font-size: 0.9em;
-            margin-top: 10px;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+        .disclaimer strong {
+            color: #e65100;
         }
 
         @media (max-width: 768px) {
@@ -458,8 +398,9 @@
                 font-size: 1.8em;
             }
 
-            .patch-grid {
-                grid-template-columns: repeat(3, 1fr);
+            .patch, .ordered-patch, .empty-slot {
+                width: 50px;
+                height: 50px;
             }
         }
     </style>
@@ -467,106 +408,128 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎨 D-15 Color Vision AI Testing System</h1>
-            <p>Upload an image and arrange 15 color patches to test your color perception with similar hues</p>
+            <h1>🎨 D-15 Color Vision Test</h1>
+            <p class="subtitle">AI-Powered Color Vision Analysis</p>
+            <div class="gemini-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white"/>
+                    <path d="M2 17L12 22L22 17L12 12L2 17Z" fill="white" opacity="0.7"/>
+                </svg>
+                Powered by Google Gemini AI
+            </div>
         </div>
 
-        <!-- Step 1: Upload Image -->
+        <!-- Step 1: Upload -->
         <div class="section" id="upload-section">
-            <div class="section-title">Step 1: Upload an Image</div>
+            <div class="section-title">Step 1: Upload Your Image</div>
+            <div class="info-box">
+                <strong>📸 Instructions:</strong> Upload any colorful image (nature, art, photos). 
+                We'll extract 15 dominant colors and create a personalized D-15 color arrangement test.
+            </div>
             <div class="upload-area" id="upload-area">
-                <div class="upload-area-text">📸 Drop your image here or click to select</div>
-                <div class="upload-area-hint">Supported: JPG, PNG, WebP (any natural image)</div>
+                <div class="upload-icon">📁</div>
+                <div style="font-size: 1.2em; margin-bottom: 10px; color: #667eea; font-weight: 600;">
+                    Drop your image here or click to browse
+                </div>
+                <div style="color: #999; font-size: 0.9em;">
+                    Supported: JPG, PNG, WebP, GIF
+                </div>
                 <input type="file" id="file-input" accept="image/*">
             </div>
             <div id="upload-error" class="error-message hidden"></div>
             <div id="upload-loading" class="loading hidden">
                 <div class="spinner"></div>
-                <p>Extracting colors and generating test...</p>
+                <p style="color: #667eea; font-size: 1.1em;">Analyzing image and generating test...</p>
             </div>
         </div>
 
-        <!-- Step 2: Take Test -->
+        <!-- Step 2: Test -->
         <div class="section hidden" id="test-section">
             <div class="section-title">Step 2: Arrange the Colors</div>
-            <div class="info-text">
-                Drag and drop the 15 color patches below to arrange them in the order you think is correct.
-                This D-15 test evaluates your color perception accuracy with similar hues and shades.
+            <div class="info-box">
+                <strong>🎯 How to complete the test:</strong>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Drag colors from the pool below one at a time</li>
+                    <li>Arrange them horizontally from similar to similar hues</li>
+                    <li>Each color can only be used once</li>
+                    <li>Click on arranged colors to remove them</li>
+                    <li>Submit when all colors are arranged</li>
+                </ol>
             </div>
             
-            <div class="test-container">
-                <div style="margin-bottom: 20px;">
-                    <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">Available Colors:</div>
-                    <div class="patch-grid" id="patch-grid"></div>
+            <div style="margin-bottom: 20px;">
+                <div style="font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em;">
+                    Available Colors:
                 </div>
+                <div class="patch-grid" id="patch-grid"></div>
+            </div>
 
-                <div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">Your Order:</div>
-                <div class="ordering-zone" id="ordering-zone">
-                    <div class="ordered-patches" id="ordered-patches"></div>
-                </div>
+            <div style="font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em;">
+                Your Arrangement (<span id="progress-count">0</span>/<span id="total-count">14</span> placed):
+            </div>
+            <div class="ordering-zone">
+                <div class="ordered-patches" id="ordered-patches"></div>
             </div>
 
             <div id="test-error" class="error-message hidden"></div>
 
-            <div class="button-group">
-                <button class="button" id="submit-btn" disabled>Submit Response</button>
-                <button class="button button-secondary" id="reset-btn">Reset</button>
-                <button class="button button-secondary" id="upload-new-btn">Upload New Image</button>
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="button" id="submit-btn" disabled>
+                    🧪 Submit for AI Analysis
+                </button>
+                <button class="button button-secondary" id="reset-btn">
+                    🔄 Reset Arrangement
+                </button>
+                <button class="button button-secondary" id="upload-new-btn">
+                    📸 Upload New Image
+                </button>
             </div>
         </div>
 
         <!-- Step 3: Results -->
         <div class="section hidden" id="results-section">
-            <div class="section-title">Step 3: Your Results</div>
+            <div class="section-title">Step 3: Your Color Vision Analysis</div>
             
-            <div class="results-container">
-                <div class="result-card">
-                    <div class="result-title">Color Vision Type</div>
-                    <div class="result-value" id="result-class">--</div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-title">Accuracy Score</div>
-                    <div class="result-value" id="result-accuracy">--%</div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-title">Severity</div>
-                    <div class="result-value" id="result-severity" style="font-size: 1.2em;">--</div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-title">Confidence</div>
-                    <div id="result-confidence" class="chart-container"></div>
-                </div>
-
-                <div id="result-recommendation" class="recommendation hidden"></div>
-                
-                <!-- Gemini AI Analysis Section -->
-                <div id="gemini-analysis" class="gemini-analysis hidden">
-                    <div class="gemini-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#4285F4"/>
-                            <path d="M2 17L12 22L22 17L12 12L2 17Z" fill="#34A853"/>
-                            <path d="M2 12L12 17L22 12" stroke="#FBBC04" stroke-width="2"/>
-                        </svg>
-                        <h3>Gemini AI Medical Analysis</h3>
-                    </div>
-                    <div id="gemini-content" class="gemini-content">
-                        <div class="loading-spinner"></div>
-                    </div>
-                </div>
+            <div id="results-loading" class="loading-gemini">
+                <div class="spinner"></div>
+                <p>🤖 Gemini AI is analyzing your results...</p>
+                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                    This may take 10-20 seconds
+                </p>
             </div>
 
-            <div class="button-group">
-                <button class="button" id="test-again-btn">Take Test Again</button>
-                <button class="button" id="distractor-btn">Try Harder Test (Distractors)</button>
-                <button class="button" id="luminance-btn">Try Luminance Test</button>
+            <!-- Gemini AI Analysis -->
+            <div id="gemini-analysis" class="gemini-analysis hidden">
+                <div class="gemini-header">
+                    <svg class="gemini-logo" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#4285F4"/>
+                        <path d="M2 17L12 22L22 17L12 12L2 17Z" fill="#34A853"/>
+                        <path d="M2 12L12 17L22 12" stroke="#FBBC04" stroke-width="2"/>
+                    </svg>
+                    <h2>Comprehensive Medical Analysis</h2>
+                </div>
+                <div id="gemini-content" class="gemini-content"></div>
+            </div>
+
+            <div class="disclaimer">
+                <strong>⚠️ Medical Disclaimer:</strong> This is an AI-powered screening tool for educational purposes only. 
+                It is NOT a substitute for professional medical diagnosis. For accurate diagnosis and treatment, 
+                please consult a qualified ophthalmologist or optometrist. Color vision deficiencies affect approximately 
+                8% of males and 0.5% of females, and early detection helps with appropriate accommodations.
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="button" id="test-again-btn">
+                    🔁 Take Test Again
+                </button>
             </div>
         </div>
     </div>
 
     <script>
+        // Configuration
+        const API_BASE = 'http://localhost:8000';
+        
         // Global state
         let sessionId = null;
         let testSpec = null;
@@ -580,159 +543,63 @@
         const testSection = document.getElementById('test-section');
         const resultsSection = document.getElementById('results-section');
         const patchGrid = document.getElementById('patch-grid');
-        const orderingZone = document.getElementById('ordering-zone');
         const submitBtn = document.getElementById('submit-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const uploadNewBtn = document.getElementById('upload-new-btn');
-        const testAgainBtn = document.getElementById('test-again-btn');
-        const distractorBtn = document.getElementById('distractor-btn');
-        const luminanceBtn = document.getElementById('luminance-btn');
-
-        const API_BASE = 'http://localhost:8000';
 
         // Upload handlers
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelect);
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadArea.classList.add('dragover');
+            uploadArea.style.transform = 'scale(1.02)';
+            uploadArea.style.borderColor = '#764ba2';
         });
         uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
+            uploadArea.style.transform = 'scale(1)';
+            uploadArea.style.borderColor = '#667eea';
         });
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadArea.classList.remove('dragover');
+            uploadArea.style.transform = 'scale(1)';
             if (e.dataTransfer.files.length) {
                 fileInput.files = e.dataTransfer.files;
                 handleFileSelect();
             }
         });
 
-        // Helper function to resize images on client side
-        function resizeImage(file, maxWidth, maxHeight, quality) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-
-                        // Calculate new dimensions
-                        if (width > height) {
-                            if (width > maxWidth) {
-                                height = height * (maxWidth / width);
-                                width = maxWidth;
-                            }
-                        } else {
-                            if (height > maxHeight) {
-                                width = width * (maxHeight / height);
-                                height = maxHeight;
-                            }
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        canvas.toBlob((blob) => {
-                            resolve(new File([blob], file.name, {
-                                type: 'image/jpeg',
-                                lastModified: Date.now()
-                            }));
-                        }, 'image/jpeg', quality);
-                    };
-                    img.onerror = reject;
-                    img.src = e.target.result;
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
-
         async function handleFileSelect() {
             const file = fileInput.files[0];
             if (!file) return;
 
-            // Show loading
             document.getElementById('upload-loading').classList.remove('hidden');
             document.getElementById('upload-error').classList.add('hidden');
 
             try {
-                // Resize large images on client side for faster upload
-                let fileToUpload = file;
-                if (file.size > 500000) { // If larger than 500KB
-                    console.log('Large image detected, resizing before upload...');
-                    fileToUpload = await resizeImage(file, 800, 800, 0.85);
-                    console.log(`Resized from ${file.size} to ${fileToUpload.size} bytes`);
-                }
-                
                 const formData = new FormData();
-                formData.append('file', fileToUpload);
+                formData.append('file', file);
 
-                console.log('=== UPLOAD START ===');
-                console.log('File:', file.name, file.type, file.size, 'bytes');
-                console.log('API URL:', `${API_BASE}/upload-image`);
-
-                // Create abort controller for timeout (2 minutes for large images)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => {
-                    console.warn('Upload timeout - aborting request');
-                    controller.abort();
-                }, 120000); // 2 minute timeout
+                console.log('Uploading to:', `${API_BASE}/upload-image`);
 
                 const response = await fetch(`${API_BASE}/upload-image`, {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    signal: controller.signal
                 });
 
-                clearTimeout(timeoutId);
-                console.log('Timeout cleared successfully');
-                console.log('Response status:', response.status);
-                console.log('Response headers:', [...response.headers.entries()]);
-                
                 if (!response.ok) {
-                    const errorData = await response.text();
-                    console.error('Error response:', errorData);
-                    throw new Error(`Upload failed (${response.status}): ${errorData}`);
+                    const error = await response.text();
+                    throw new Error(error || `Upload failed: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('Response data:', data);
-                
-                if (!data.session_id || !data.test_spec) {
-                    throw new Error('Invalid response: missing session_id or test_spec');
-                }
-                
+                console.log('Upload response:', data);
+
                 sessionId = data.session_id;
                 testSpec = data.test_spec;
 
-                console.log('=== UPLOAD SUCCESS ===');
-                console.log('Session ID:', sessionId);
-                console.log('Test spec:', testSpec);
-
                 showTestSection();
             } catch (error) {
-                console.error('=== UPLOAD ERROR ===');
-                console.error('Error type:', error.name);
-                console.error('Error:', error);
-                console.error('Stack:', error.stack);
-                
-                let errorMessage = error.message;
-                if (error.name === 'AbortError') {
-                    errorMessage = 'Upload timed out (30 seconds). Image may be too large or backend is not responding.';
-                } else if (error.message.includes('Failed to fetch')) {
-                    errorMessage = 'Cannot connect to backend server. Is it running on http://localhost:8000?';
-                }
-                
-                document.getElementById('upload-error').textContent = `Error: ${errorMessage}`;
+                console.error('Upload error:', error);
+                document.getElementById('upload-error').textContent = 
+                    `Error: ${error.message}. Is the backend running on ${API_BASE}?`;
                 document.getElementById('upload-error').classList.remove('hidden');
             } finally {
                 document.getElementById('upload-loading').classList.add('hidden');
@@ -743,15 +610,15 @@
             uploadSection.classList.add('hidden');
             testSection.classList.remove('hidden');
             resultsSection.classList.add('hidden');
-            userOrder = new Array(testSpec.n_colors).fill(null);
+            userOrder = new Array(testSpec.n_colors - 1).fill(null);
+            document.getElementById('total-count').textContent = testSpec.n_colors - 1;
             renderPatchGrid();
         }
 
         function renderPatchGrid() {
             patchGrid.innerHTML = '';
             
-            // Render available colors
-            testSpec.patch_configs.forEach((config, index) => {
+            testSpec.patch_configs.forEach(config => {
                 const rgb = config.rgb;
                 const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
@@ -760,26 +627,22 @@
                 patch.style.backgroundColor = color;
                 patch.draggable = true;
                 patch.dataset.colorIndex = config.color_index;
-                patch.dataset.rgb = JSON.stringify(rgb);
 
-                // Check if this color is already used in any slot
                 const isUsed = userOrder.includes(config.color_index);
                 if (isUsed) {
                     patch.classList.add('used');
-                    patch.draggable = false; // Prevent dragging used colors
+                    patch.draggable = false;
                 }
 
-                patch.addEventListener('dragstart', (e) => {
-                    if (!patch.classList.contains('used')) {
+                patch.addEventListener('dragstart', () => {
+                    if (!isUsed) {
                         draggedElement = patch;
-                        patch.classList.add('dragging');
-                    } else {
-                        e.preventDefault();
+                        patch.style.opacity = '0.5';
                     }
                 });
 
                 patch.addEventListener('dragend', () => {
-                    patch.classList.remove('dragging');
+                    patch.style.opacity = '1';
                 });
 
                 patchGrid.appendChild(patch);
@@ -789,275 +652,173 @@
         }
 
         function renderOrderingZone() {
-            const orderedPatchesContainer = document.getElementById('ordered-patches');
-            orderedPatchesContainer.innerHTML = '';
+            const container = document.getElementById('ordered-patches');
+            container.innerHTML = '';
 
-            // --- Reference Patch (fixed) ---
+            // Reference patch (fixed)
             const refConfig = testSpec.reference_patch || testSpec.patch_configs[0];
             const refRgb = refConfig.rgb;
-            const refColor = `rgb(${refRgb[0]}, ${refRgb[1]}, ${refRgb[2]})`;
-
             const referencePatch = document.createElement('div');
-            referencePatch.className = 'ordered-patch reference-patch';
-            referencePatch.style.backgroundColor = refColor;
-            referencePatch.innerHTML = `<div class="patch-index">Ref</div>`;
+            referencePatch.className = 'ordered-patch';
+            referencePatch.style.backgroundColor = `rgb(${refRgb[0]}, ${refRgb[1]}, ${refRgb[2]})`;
+            referencePatch.innerHTML = '<div class="patch-index">REF</div>';
             referencePatch.title = "Reference Color (Fixed)";
-            orderedPatchesContainer.appendChild(referencePatch);
+            container.appendChild(referencePatch);
 
-            // --- Remaining slots (user order) ---
-            for (let i = 0; i < testSpec.n_colors - 1; i++) {
+            // User slots
+            for (let i = 0; i < userOrder.length; i++) {
                 const colorIndex = userOrder[i];
-                const hasColor = colorIndex !== undefined && colorIndex !== null && colorIndex >= 0;
 
-                if (hasColor) {
+                if (colorIndex !== null && colorIndex !== undefined && colorIndex >= 0) {
                     const config = testSpec.patch_configs.find(c => c.color_index === colorIndex);
-                    if (!config) continue;
-                    const rgb = config.rgb;
-                    const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-
-                    const orderedPatch = document.createElement('div');
-                    orderedPatch.className = 'ordered-patch';
-                    orderedPatch.style.backgroundColor = color;
-                    orderedPatch.dataset.slotIndex = i;
-                    orderedPatch.dataset.colorIndex = colorIndex;
-
-                    const index = document.createElement('div');
-                    index.className = 'patch-index';
-                    index.textContent = i + 1;
-                    orderedPatch.appendChild(index);
-
-                    orderedPatch.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        removeFromSlot(i);
-                    });
-
-                    orderedPatch.addEventListener('dragover', (e) => e.preventDefault());
-                    orderedPatch.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        if (draggedElement && draggedElement !== orderedPatch) addToSlot(i, draggedElement);
-                    });
-
-                    orderedPatchesContainer.appendChild(orderedPatch);
+                    if (config) {
+                        const rgb = config.rgb;
+                        const patch = document.createElement('div');
+                        patch.className = 'ordered-patch';
+                        patch.style.backgroundColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+                        patch.innerHTML = `<div class="patch-index">${i + 1}</div>`;
+                        patch.onclick = () => removeFromSlot(i);
+                        patch.addEventListener('dragover', (e) => e.preventDefault());
+                        patch.addEventListener('drop', () => addToSlot(i));
+                        container.appendChild(patch);
+                    }
                 } else {
                     const emptySlot = document.createElement('div');
                     emptySlot.className = 'empty-slot';
                     emptySlot.textContent = i + 1;
-                    emptySlot.dataset.slotIndex = i;
-
                     emptySlot.addEventListener('dragover', (e) => {
                         e.preventDefault();
-                        emptySlot.classList.add('drag-over');
+                        emptySlot.style.transform = 'scale(1.1)';
                     });
-
-                    emptySlot.addEventListener('dragleave', () => emptySlot.classList.remove('drag-over'));
-                    emptySlot.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        emptySlot.classList.remove('drag-over');
-                        if (draggedElement) addToSlot(i, draggedElement);
+                    emptySlot.addEventListener('dragleave', () => {
+                        emptySlot.style.transform = 'scale(1)';
                     });
-
-                    orderedPatchesContainer.appendChild(emptySlot);
+                    emptySlot.addEventListener('drop', () => {
+                        emptySlot.style.transform = 'scale(1)';
+                        addToSlot(i);
+                    });
+                    container.appendChild(emptySlot);
                 }
             }
 
-            const filledCount = userOrder.filter(x => x !== undefined && x !== null && x >= 0).length;
-            submitBtn.disabled = filledCount !== (testSpec.n_colors - 1);
+            const placedCount = userOrder.filter(x => x !== null && x !== undefined && x >= 0).length;
+            document.getElementById('progress-count').textContent = placedCount;
+            submitBtn.disabled = placedCount !== userOrder.length;
         }
 
-
-        function addToSlot(slotIndex, element) {
-            if (!element || !element.dataset || !element.dataset.colorIndex) {
+        function addToSlot(slotIndex) {
+            if (!draggedElement) return;
+            
+            const colorIndex = parseInt(draggedElement.dataset.colorIndex);
+            
+            if (userOrder.includes(colorIndex)) {
+                showError('This color is already used!');
                 return;
             }
             
-            const colorIndex = parseInt(element.dataset.colorIndex);
-            
-            // Validate color index
-            if (isNaN(colorIndex) || colorIndex < 0) {
-                return;
-            }
-            
-            // Check if from available colors
-            if (element.classList.contains('patch')) {
-                // Check if this color is already used in another slot
-                const existingSlotIndex = userOrder.findIndex((c, idx) => c === colorIndex && idx !== slotIndex);
-                
-                if (existingSlotIndex !== -1) {
-                    // Color already used - show error
-                    document.getElementById('test-error').textContent = 'This color is already used! Each color can only be used once.';
-                    document.getElementById('test-error').classList.remove('hidden');
-                    setTimeout(() => {
-                        document.getElementById('test-error').classList.add('hidden');
-                    }, 3000);
-                    return;
-                }
-                
-                // If slot is already filled, we're replacing it
-                // The old color will become available again
-                userOrder[slotIndex] = colorIndex;
-                
-                // Re-render everything to update states
-                renderPatchGrid();
-            }
+            userOrder[slotIndex] = colorIndex;
+            renderPatchGrid();
         }
 
         function removeFromSlot(slotIndex) {
-            // Set slot to null (not undefined) to maintain array structure
-            if (slotIndex >= 0 && slotIndex < userOrder.length) {
-                userOrder[slotIndex] = null;
-                renderPatchGrid(); // Re-render to unmark as used
-            }
+            userOrder[slotIndex] = null;
+            renderPatchGrid();
         }
 
-        submitBtn.addEventListener('click', submitResponse);
+        function showError(message) {
+            const errorEl = document.getElementById('test-error');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            setTimeout(() => errorEl.classList.add('hidden'), 3000);
+        }
 
-        async function submitResponse() {
+        submitBtn.addEventListener('click', async () => {
             try {
-                // Filter out nulls and send only the color order
-                const finalOrder = userOrder.filter(x => x !== null);
+                // Prepend reference color (index 0)
+                const completeOrder = [testSpec.patch_configs[0].color_index, ...userOrder];
                 
-                const response = await fetch(`${API_BASE}/submit-response?session_id=${sessionId}&user_order=${JSON.stringify(finalOrder)}`, {
-                    method: 'POST',
-                });
+                console.log('Submitting order:', completeOrder);
 
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                testSection.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
+                document.getElementById('results-loading').classList.remove('hidden');
+
+                const response = await fetch(
+                    `${API_BASE}/submit-response?session_id=${sessionId}&user_order=${JSON.stringify(completeOrder)}`,
+                    { method: 'POST' }
+                );
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
 
                 const data = await response.json();
-                showResults(data);
+                console.log('Results:', data);
+
+                displayResults(data);
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('test-error').textContent = `Error: ${error.message}`;
-                document.getElementById('test-error').classList.remove('hidden');
+                console.error('Submit error:', error);
+                alert(`Error: ${error.message}`);
+                testSection.classList.remove('hidden');
+                resultsSection.classList.add('hidden');
             }
-        }
+        });
 
-        function showResults(data) {
-            console.log('Full response data:', data); // Debug log
+        function displayResults(data) {
+            document.getElementById('results-loading').classList.add('hidden');
             
-            testSection.classList.add('hidden');
-            resultsSection.classList.remove('hidden');
-
-            // Hide ML classification sections (we only use Gemini AI now)
-            document.querySelector('.results-container').style.display = 'none';
-            
-            // Show ONLY Gemini AI Analysis
-            displayGeminiAnalysis(data.gemini_analysis);
-        }
-        
-        function displayGeminiAnalysis(geminiData) {
             const geminiSection = document.getElementById('gemini-analysis');
             const geminiContent = document.getElementById('gemini-content');
             
-            console.log('=== DISPLAY GEMINI ANALYSIS ===');
-            console.log('geminiData:', geminiData);
-            console.log('geminiData.success:', geminiData?.success);
-            console.log('geminiData.ai_analysis exists:', !!geminiData?.ai_analysis);
-            console.log('ai_analysis length:', geminiData?.ai_analysis?.length);
-            
-            if (!geminiData) {
-                console.log('No geminiData - hiding section');
-                geminiSection.classList.add('hidden');
-                return;
-            }
-            
-            console.log('Removing hidden class from gemini section');
-            geminiSection.classList.remove('hidden');
-            
-            if (geminiData.success && geminiData.ai_analysis) {
-                console.log('SUCCESS! Formatting and displaying AI analysis...');
-                // Format the AI analysis with markdown-like rendering
-                const formattedAnalysis = formatGeminiAnalysis(geminiData.ai_analysis);
-                console.log('Formatted HTML length:', formattedAnalysis.length);
-                geminiContent.innerHTML = formattedAnalysis;
-                console.log('Content inserted into DOM');
+            if (data.gemini_analysis && data.gemini_analysis.success) {
+                geminiSection.classList.remove('hidden');
+                geminiContent.innerHTML = formatMarkdown(data.gemini_analysis.ai_analysis);
             } else {
-                console.log('FAILED - showing error message');
-                console.log('success:', geminiData.success, 'has ai_analysis:', !!geminiData.ai_analysis);
+                geminiSection.classList.remove('hidden');
                 geminiContent.innerHTML = `
-                    <div class="gemini-error">
-                        <strong>⚠️ AI Analysis Unavailable</strong>
-                        <p>${geminiData.error || 'Gemini AI is not configured. Please set GEMINI_API_KEY in backend/.env file.'}</p>
-                        <p style="margin-top: 10px; font-size: 0.9em;">
-                            Get your free API key from: 
-                            <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: #1a73e8;">
-                                Google AI Studio
+                    <div class="error-message">
+                        <strong>⚠️ Gemini AI Analysis Unavailable</strong>
+                        <p>${data.gemini_analysis?.error || 'Please configure GEMINI_API_KEY in your backend.'}</p>
+                        <p style="margin-top: 15px;">
+                            Get your free API key: 
+                            <a href="https://makersuite.google.com/app/apikey" target="_blank" 
+                               style="color: #1a73e8; font-weight: 600;">
+                                Google AI Studio →
                             </a>
                         </p>
                     </div>
                 `;
             }
-            console.log('=== END DISPLAY ===');
         }
-        
-        function formatGeminiAnalysis(text) {
-            // Simple markdown-like formatting
-            let formatted = text
-                // Bold text
+
+        function formatMarkdown(text) {
+            return text
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                // Headers
-                .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-                .replace(/^## (.+)$/gm, '<h3 style="color: #1a73e8; font-size: 1.2em;">$1</h3>')
-                .replace(/^# (.+)$/gm, '<h2 style="color: #1a73e8; font-size: 1.4em;">$1</h2>')
-                // Bullet points
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
                 .replace(/^- (.+)$/gm, '<li>$1</li>')
                 .replace(/^• (.+)$/gm, '<li>$1</li>')
-                // Numbered lists
-                .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-            
-            // Wrap consecutive <li> in <ul>
-            formatted = formatted.replace(/(<li>.*<\/li>\s*)+/gs, match => `<ul>${match}</ul>`);
-            
-            // Add line breaks for paragraphs
-            formatted = formatted.replace(/\n\n/g, '<br><br>');
-            
-            return formatted;
+                .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+                .replace(/(<li>.*?<\/li>\s*)+/gs, match => `<ul>${match}</ul>`)
+                .replace(/\n\n/g, '<br><br>');
         }
 
-        resetBtn.addEventListener('click', () => {
-            userOrder = new Array(testSpec.n_colors).fill(null);
+        document.getElementById('reset-btn').onclick = () => {
+            userOrder = new Array(testSpec.n_colors - 1).fill(null);
             renderPatchGrid();
-            submitBtn.disabled = true;
-            document.getElementById('test-error').classList.add('hidden');
-        });
+        };
 
-        uploadNewBtn.addEventListener('click', () => {
+        document.getElementById('upload-new-btn').onclick = () => {
             fileInput.value = '';
             uploadSection.classList.remove('hidden');
             testSection.classList.add('hidden');
             resultsSection.classList.add('hidden');
-            sessionId = null;
-            testSpec = null;
-        });
+        };
 
-        testAgainBtn.addEventListener('click', () => {
+        document.getElementById('test-again-btn').onclick = () => {
             showTestSection();
-        });
-
-        distractorBtn.addEventListener('click', async () => {
-            try {
-                const response = await fetch(`${API_BASE}/generate-distractor-test?session_id=${sessionId}`, {
-                    method: 'POST',
-                });
-                if (response.ok) {
-                    alert('Distractor test variant generated! (Feature expansion)');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        });
-
-        luminanceBtn.addEventListener('click', async () => {
-            try {
-                const response = await fetch(`${API_BASE}/generate-luminance-test?session_id=${sessionId}`, {
-                    method: 'POST',
-                });
-                if (response.ok) {
-                    alert('Luminance-equalized test variant generated! (Feature expansion)');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        });
+        };
     </script>
 </body>
 </html>
