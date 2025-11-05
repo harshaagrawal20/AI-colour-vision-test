@@ -121,17 +121,33 @@ async def upload_image(file: UploadFile = File(...)):
             image_array = cv2.resize(image_array, (new_w, new_h))
             print(f"Image resized to: {image_array.shape}")
         
-        # Extract dominant colors in LAB (NO AI - just OpenCV + K-Means clustering)
+        # Extract dominant colors in LAB
         print("Extracting dominant colors using K-Means...")
         dominant_colors_lab, labels, inertia = color_extractor.extract_dominant_colors(
             image_array, convert_to_lab=True, use_d15_shading=True
         )
         print(f"Extracted {len(dominant_colors_lab)} colors in proper hue sequence")
-        
+
+        # === Compute Reference Pad Color (balanced midtone) ===
+        print("Selecting reference pad color...")
+        try:
+            # Convert LAB → RGB (0–255)
+            lab_to_rgb = cv2.cvtColor(np.uint8([dominant_colors_lab]), cv2.COLOR_LAB2RGB)[0]
+            # Compute chroma = sqrt(a^2 + b^2)
+            chroma = np.sqrt(dominant_colors_lab[:, 1] ** 2 + dominant_colors_lab[:, 2] ** 2)
+            # Avoid grey/neutral colors: pick the color with median chroma
+            mid_idx = np.argsort(chroma)[len(chroma)//2]
+            reference_pad_color_rgb = lab_to_rgb[mid_idx].astype(int).tolist()
+        except Exception as e:
+            print(f"⚠ Failed to compute reference pad color: {str(e)}")
+            reference_pad_color_rgb = [255, 255, 255]  # fallback white
+
         # Generate test
         print("Generating test spec...")
         test_spec = test_generator.generate_test(dominant_colors_lab)
-        print(f"Test spec generated with {test_spec['n_colors']} colors")
+        test_spec["reference_pad_color"] = reference_pad_color_rgb  # Add reference pad color
+        print(f"Test spec generated with {test_spec['n_colors']} colors, ref color: {reference_pad_color_rgb}")
+
         
         # Store session
         session_id = f"session_{len(test_sessions)}"
