@@ -16,60 +16,67 @@ class TestGenerator:
         self.test_type = test_type
         self.color_extractor = ColorExtractor()
 
-    def generate_test(self, dominant_colors_lab, reference_order=None):
+    def generate_test(self, dominant_colors_lab, reference_index=None, reference_order=None):
         """
         Generate a color vision test from dominant colors in LAB space.
-        
-        Args:
-            dominant_colors_lab: (N, 3) array of colors in LAB space
-            reference_order: If None, use given order; else shuffle for user test
-            
-        Returns:
-            test_spec: Dictionary with test metadata and visual spec
         """
         n_colors = len(dominant_colors_lab)
-        
+
         if reference_order is None:
             reference_order = np.arange(n_colors)
-        
-        # Shuffle for user test
+
+        # Shuffle order for user test
         user_order = np.random.permutation(n_colors)
-        
+
+        # --- 🟢 FIX: Safely handle reference_index type ---
+        if reference_index is not None:
+            if isinstance(reference_index, (list, np.ndarray)):
+                reference_index = int(np.ravel(reference_index)[0])  # Extract single integer
+            else:
+                reference_index = int(reference_index)
+        else:
+            reference_index = int(user_order[0])
+        # --------------------------------------------------
+
+        # Fix reference color at start
+        user_order = [reference_index] + [i for i in user_order if i != reference_index]
+
+        # Convert LAB → RGB
+        rgb_colors = self.color_extractor.lab_to_rgb(dominant_colors_lab)
+
+        # Extract reference pad color
+        reference_pad_color_lab = dominant_colors_lab[reference_index]
+        reference_pad_color_rgb = rgb_colors[reference_index]
+
         test_spec = {
             "test_type": self.test_type,
-            "reference_colors_lab": dominant_colors_lab.tolist(),
-            "reference_order": reference_order.tolist(),
-            "user_test_order": user_order.tolist(),
             "n_colors": n_colors,
+            "reference_colors_lab": dominant_colors_lab.tolist(),
+            "reference_colors_rgb": rgb_colors.tolist(),
+            "reference_order": reference_order.tolist(),
+            "user_test_order": [int(x) for x in user_order],
+            "reference_pad_index": int(reference_index),
+            "reference_pad_color_lab": reference_pad_color_lab.tolist(),
+            "reference_pad_color_rgb": reference_pad_color_rgb.tolist(),
+            "message": "Color vision test generated successfully"
         }
-        
-        # Add visual properties for frontend
-        rgb_colors = self.color_extractor.lab_to_rgb(dominant_colors_lab)
-        test_spec["reference_colors_rgb"] = rgb_colors.tolist()
-        
-        # Add patch sizes and luminance info
+
         test_spec["patch_configs"] = [
             {
                 "color_index": int(idx),
                 "lab": dominant_colors_lab[idx].tolist(),
                 "rgb": rgb_colors[idx].tolist(),
-                "luminance": float(dominant_colors_lab[idx, 0]),  # L value
+                "luminance": float(dominant_colors_lab[idx, 0]),
             }
             for idx in user_order
         ]
-        
+
         return test_spec
+
 
     def generate_distractor_test(self, dominant_colors_lab, n_distractors=3):
         """
         Generate a test with distractor colors (simulating harder discrimination).
-        
-        Args:
-            dominant_colors_lab: (N, 3) reference colors in LAB
-            n_distractors: Number of distractor colors per reference
-            
-        Returns:
-            test_spec: Dictionary with reference + distractor configs
         """
         n_colors = len(dominant_colors_lab)
         test_spec = {
@@ -87,15 +94,12 @@ class TestGenerator:
             distractors = []
             for j in range(n_distractors):
                 distractor_lab = color_lab.copy()
-                # Add random perturbation in color opponent channels
-                distractor_lab[1] += np.random.uniform(-20, 20)  # a channel
-                distractor_lab[2] += np.random.uniform(-20, 20)  # b channel
-                # Clip to valid range
+                distractor_lab[1] += np.random.uniform(-20, 20)
+                distractor_lab[2] += np.random.uniform(-20, 20)
                 distractor_lab[1] = np.clip(distractor_lab[1], -127, 127)
                 distractor_lab[2] = np.clip(distractor_lab[2], -127, 127)
                 distractors.append(distractor_lab.tolist())
             
-            # Shuffle reference + distractors
             options = [color_lab.tolist()] + distractors
             option_indices = np.random.permutation(len(options))
             group["options"] = [options[idx] for idx in option_indices]
@@ -108,16 +112,8 @@ class TestGenerator:
     def generate_luminance_test(self, dominant_colors_lab):
         """
         Generate a luminance-based test (control for brightness differences).
-        
-        Args:
-            dominant_colors_lab: (N, 3) colors in LAB
-            
-        Returns:
-            test_spec: Test with equalized luminance
         """
         normalized_colors = dominant_colors_lab.copy()
-        
-        # Equalize luminance to median
         median_l = np.median(dominant_colors_lab[:, 0])
         normalized_colors[:, 0] = median_l
         

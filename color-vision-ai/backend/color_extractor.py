@@ -270,3 +270,32 @@ class ColorExtractor:
         """
         # Simplified ΔE (Euclidean in LAB)
         return np.sqrt(np.sum((lab1 - lab2) ** 2, axis=-1))
+    
+    def find_balanced_reference_color(self, dominant_colors_lab):
+        """
+        Select a balanced reference color (midpoint) from the extracted colors.
+        The reference color is the one closest to the mean LAB value.
+        
+        Args:
+            dominant_colors_lab: (N, 3) numpy array of LAB colors.
+        
+        Returns:
+            (ref_index, ref_color): Tuple of index and LAB color of reference pad.
+        """
+        if not isinstance(dominant_colors_lab, np.ndarray):
+            dominant_colors_lab = np.array(dominant_colors_lab)
+
+        # Compute the mean LAB vector
+        mean_lab = np.mean(dominant_colors_lab, axis=0)
+
+        # Compute Euclidean distances from the mean
+        distances = np.linalg.norm(dominant_colors_lab - mean_lab, axis=1)
+
+        # Index of the color closest to the midpoint
+        ref_index = int(np.argmin(distances))
+        ref_color = dominant_colors_lab[ref_index]
+
+        if self.verbose:
+            print(f"[Reference Color] Index: {ref_index}, LAB: {ref_color}")
+
+        return ref_index, ref_color

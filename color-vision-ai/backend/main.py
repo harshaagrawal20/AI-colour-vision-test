@@ -15,6 +15,7 @@ from color_extractor import ColorExtractor
 from test_generator import TestGenerator
 from error_analyzer import ErrorAnalyzer
 from gemini_analyzer import GeminiAnalyzer
+import traceback
 
 # Load environment variables
 load_dotenv()
@@ -121,18 +122,55 @@ async def upload_image(file: UploadFile = File(...)):
             image_array = cv2.resize(image_array, (new_w, new_h))
             print(f"Image resized to: {image_array.shape}")
         
-        # Extract dominant colors in LAB (NO AI - just OpenCV + K-Means clustering)
+        # Extract dominant colors in LAB
         print("Extracting dominant colors using K-Means...")
         dominant_colors_lab, labels, inertia = color_extractor.extract_dominant_colors(
             image_array, convert_to_lab=True, use_d15_shading=True
         )
         print(f"Extracted {len(dominant_colors_lab)} colors in proper hue sequence")
-        
-        # Generate test
+
+        # --- Select reference color based on median hue ---
+        print("Selecting reference color based on hue angle...")
+
+        a_vals = dominant_colors_lab[:, 1]
+        b_vals = dominant_colors_lab[:, 2]
+        hues = np.degrees(np.arctan2(b_vals, a_vals))
+        hues[hues < 0] += 360  # convert to 0–360 range
+
+        # Sort colors by hue and select median hue
+        sorted_indices = np.argsort(hues)
+        median_idx = int(sorted_indices[len(sorted_indices) // 2])
+        reference_order = np.arange(len(dominant_colors_lab))
+
+        # ✅ FIX: Explicitly use scalar comparison, avoid ambiguous truth
+        if len(reference_order) > 0 and int(median_idx) != 0:
+            temp = reference_order[0]
+            reference_order[0] = reference_order[median_idx]
+            reference_order[median_idx] = temp
+
+        print(f"Reference color index chosen: {median_idx} (Hue={hues[median_idx]:.2f})")
+
+        # --- Convert reference LAB to RGB ---
+        reference_color_lab = np.expand_dims(np.expand_dims(dominant_colors_lab[median_idx], axis=0), axis=0)
+        reference_color_rgb = cv2.cvtColor(reference_color_lab.astype(np.float32), cv2.COLOR_Lab2RGB)
+        reference_pad_color_rgb = np.clip(reference_color_rgb[0, 0] * 255, 0, 255).astype(np.uint8).tolist()
+
+        # --- Generate test with updated reference ---
         print("Generating test spec...")
-        test_spec = test_generator.generate_test(dominant_colors_lab)
-        print(f"Test spec generated with {test_spec['n_colors']} colors")
-        
+        test_spec = test_generator.generate_test(dominant_colors_lab, reference_order)
+        test_spec["reference_pad_color"] = reference_pad_color_rgb
+
+        # Also add an explicit reference_color entry so the frontend doesn't have
+        # to rely on array ordering (and to make debugging easier).
+        try:
+            if "patch_configs" in test_spec and len(test_spec["patch_configs"]) > 0:
+                test_spec["reference_color"] = test_spec["patch_configs"][0]
+        except Exception:
+            traceback.print_exc()
+
+        print(f"Test spec generated with {test_spec['n_colors']} colors, ref color: {reference_pad_color_rgb}")
+
+                
         # Store session
         session_id = f"session_{len(test_sessions)}"
         test_sessions[session_id] = {
@@ -153,6 +191,9 @@ async def upload_image(file: UploadFile = File(...)):
         })
     
     except Exception as e:
+        # Print full traceback to server logs to diagnose ambiguous-truth errors
+        print("UPLOAD ERROR:", repr(e))
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 

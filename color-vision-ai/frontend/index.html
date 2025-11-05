@@ -791,22 +791,27 @@
         function renderOrderingZone() {
             const orderedPatchesContainer = document.getElementById('ordered-patches');
             orderedPatchesContainer.innerHTML = '';
-            
-            // Create 15 slots - always create exactly 15
-            for (let i = 0; i < testSpec.n_colors; i++) {
+
+            // --- Reference Patch (fixed) ---
+            const refConfig = testSpec.reference_patch || testSpec.patch_configs[0];
+            const refRgb = refConfig.rgb;
+            const refColor = `rgb(${refRgb[0]}, ${refRgb[1]}, ${refRgb[2]})`;
+
+            const referencePatch = document.createElement('div');
+            referencePatch.className = 'ordered-patch reference-patch';
+            referencePatch.style.backgroundColor = refColor;
+            referencePatch.innerHTML = `<div class="patch-index">Ref</div>`;
+            referencePatch.title = "Reference Color (Fixed)";
+            orderedPatchesContainer.appendChild(referencePatch);
+
+            // --- Remaining slots (user order) ---
+            for (let i = 0; i < testSpec.n_colors - 1; i++) {
                 const colorIndex = userOrder[i];
-                
-                // Check if slot has a valid color (not null, not undefined)
                 const hasColor = colorIndex !== undefined && colorIndex !== null && colorIndex >= 0;
-                
+
                 if (hasColor) {
-                    // Filled slot
                     const config = testSpec.patch_configs.find(c => c.color_index === colorIndex);
-                    if (!config) {
-                        console.error('Config not found for color index:', colorIndex);
-                        continue;
-                    }
-                    
+                    if (!config) continue;
                     const rgb = config.rgb;
                     const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
@@ -821,59 +826,44 @@
                     index.textContent = i + 1;
                     orderedPatch.appendChild(index);
 
-                    // Click to remove
                     orderedPatch.addEventListener('click', (e) => {
                         e.stopPropagation();
                         removeFromSlot(i);
                     });
 
-                    // Allow dropping on filled slots (to replace/swap)
-                    orderedPatch.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                    });
-
+                    orderedPatch.addEventListener('dragover', (e) => e.preventDefault());
                     orderedPatch.addEventListener('drop', (e) => {
                         e.preventDefault();
-                        if (draggedElement && draggedElement !== orderedPatch) {
-                            addToSlot(i, draggedElement);
-                        }
+                        if (draggedElement && draggedElement !== orderedPatch) addToSlot(i, draggedElement);
                     });
 
                     orderedPatchesContainer.appendChild(orderedPatch);
                 } else {
-                    // Empty slot
                     const emptySlot = document.createElement('div');
                     emptySlot.className = 'empty-slot';
                     emptySlot.textContent = i + 1;
                     emptySlot.dataset.slotIndex = i;
 
-                    // Drag over
                     emptySlot.addEventListener('dragover', (e) => {
                         e.preventDefault();
                         emptySlot.classList.add('drag-over');
                     });
 
-                    emptySlot.addEventListener('dragleave', () => {
-                        emptySlot.classList.remove('drag-over');
-                    });
-
-                    // Drop into slot
+                    emptySlot.addEventListener('dragleave', () => emptySlot.classList.remove('drag-over'));
                     emptySlot.addEventListener('drop', (e) => {
                         e.preventDefault();
                         emptySlot.classList.remove('drag-over');
-                        if (draggedElement) {
-                            addToSlot(i, draggedElement);
-                        }
+                        if (draggedElement) addToSlot(i, draggedElement);
                     });
 
                     orderedPatchesContainer.appendChild(emptySlot);
                 }
             }
 
-            // Update submit button - count only valid colors
             const filledCount = userOrder.filter(x => x !== undefined && x !== null && x >= 0).length;
-            submitBtn.disabled = filledCount !== testSpec.n_colors;
+            submitBtn.disabled = filledCount !== (testSpec.n_colors - 1);
         }
+
 
         function addToSlot(slotIndex, element) {
             if (!element || !element.dataset || !element.dataset.colorIndex) {
