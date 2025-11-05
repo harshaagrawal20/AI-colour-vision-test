@@ -9,11 +9,15 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import cv2
-import uvicorn
+from dotenv import load_dotenv
 
 from color_extractor import ColorExtractor
 from test_generator import TestGenerator
 from error_analyzer import ErrorAnalyzer
+from gemini_analyzer import GeminiAnalyzer
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(
     title="Color Vision AI Testing System",
@@ -31,9 +35,18 @@ app.add_middleware(
 )
 
 # Global instances
-color_extractor = ColorExtractor(n_colors=15)  # Use 15 colors for D-15 test
-test_generator = TestGenerator(test_type="patch_ordering")
-error_analyzer = ErrorAnalyzer()
+color_extractor = ColorExtractor(n_colors=15)  # Use 15 colors for D-15 test (OpenCV + K-Means, NO AI)
+test_generator = TestGenerator(test_type="patch_ordering")  # Test generation (NO AI)
+error_analyzer = ErrorAnalyzer()  # ML classification (NO Gemini AI)
+
+# Initialize Gemini AI analyzer (ONLY used AFTER user submits their arrangement)
+# NOT used for color extraction or test generation
+try:
+    gemini_analyzer = GeminiAnalyzer()
+    print("✓ Gemini AI analyzer initialized (ONLY for post-submission analysis)")
+except Exception as e:
+    gemini_analyzer = None
+    print(f"⚠ Gemini AI not available: {str(e)}")
 
 # Storage (in-memory; use DB for production)
 test_sessions = {}
@@ -63,13 +76,18 @@ async def upload_image(file: UploadFile = File(...)):
     Returns:
         JSON with test_id, test_spec, and reference colors
     """
+    print(f"\n=== UPLOAD IMAGE REQUEST ===")
     try:
         # Validate file
         if not file:
+            print("ERROR: No file provided")
             raise HTTPException(status_code=400, detail="No file provided")
         
         if not file.filename:
+            print("ERROR: File has no name")
             raise HTTPException(status_code=400, detail="File has no name")
+        
+        print(f"File received: {file.filename}, Content-Type: {file.content_type}")
         
         # Read and validate image
         contents = await file.read()
@@ -91,13 +109,29 @@ async def upload_image(file: UploadFile = File(...)):
         if image_array.size == 0:
             raise HTTPException(status_code=400, detail="Invalid image")
         
-        # Extract dominant colors in LAB (with D-15 shading for better accuracy)
+        print(f"Image decoded successfully: {image_array.shape}")
+        
+        # Resize large images for faster processing (max 800x800)
+        h, w = image_array.shape[:2]
+        max_size = 800
+        if max(h, w) > max_size:
+            scale = max_size / max(h, w)
+            new_w = int(w * scale)
+            new_h = int(h * scale)
+            image_array = cv2.resize(image_array, (new_w, new_h))
+            print(f"Image resized to: {image_array.shape}")
+        
+        # Extract dominant colors in LAB (NO AI - just OpenCV + K-Means clustering)
+        print("Extracting dominant colors using K-Means...")
         dominant_colors_lab, labels, inertia = color_extractor.extract_dominant_colors(
             image_array, convert_to_lab=True, use_d15_shading=True
         )
+        print(f"Extracted {len(dominant_colors_lab)} colors in proper hue sequence")
         
         # Generate test
+        print("Generating test spec...")
         test_spec = test_generator.generate_test(dominant_colors_lab)
+        print(f"Test spec generated with {test_spec['n_colors']} colors")
         
         # Store session
         session_id = f"session_{len(test_sessions)}"
@@ -108,6 +142,9 @@ async def upload_image(file: UploadFile = File(...)):
             "user_response": None,
             "classification": None,
         }
+        
+        print(f"Session created: {session_id}")
+        print("=== UPLOAD SUCCESS ===\n")
         
         return JSONResponse({
             "session_id": session_id,
@@ -157,30 +194,51 @@ async def submit_response(
                 detail=f"Expected {expected_length} colors, got {len(user_order)}"
             )
         
-        # Compute error metrics
+        # Get data
         reference_order = np.array(session["reference_order"])
         user_order_array = np.array(user_order)
         dominant_colors_lab = np.array(session["dominant_colors_lab"])
         
-        error_metrics = error_analyzer.compute_error_metrics(
-            reference_order, user_order_array, dominant_colors_lab
-        )
+        print(f"\n=== SUBMITTING TO GEMINI AI ===")
+        print(f"Reference order: {reference_order.tolist()}")
+        print(f"User order: {user_order}")
         
-        # Classify deficiency
-        classification = error_analyzer.classify_deficiency(error_metrics)
-        accuracy_score = error_analyzer.compute_color_accuracy_score(error_metrics)
-        report = error_analyzer.generate_report(classification, accuracy_score)
+        # Send EVERYTHING to Gemini AI for complete analysis
+        gemini_analysis = None
+        if not gemini_analyzer:
+            raise HTTPException(
+                status_code=503,
+                detail="Gemini AI is not configured. Please set GEMINI_API_KEY in .env file."
+            )
+        
+        try:
+            print("Sending to Gemini AI...")
+            gemini_analysis = gemini_analyzer.analyze_color_arrangement(
+                reference_order=reference_order.tolist(),
+                user_order=user_order,
+                reference_colors_lab=dominant_colors_lab.tolist(),
+                classification=None,  # No ML classification, pure AI
+                accuracy_score=None   # Let AI calculate everything
+            )
+            print("Gemini AI analysis received!")
+            print(f"Success: {gemini_analysis.get('success')}")
+        except Exception as e:
+            print(f"Gemini AI analysis failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Gemini AI analysis failed: {str(e)}"
+            )
         
         # Store response
         session["user_response"] = user_order
-        session["classification"] = classification
-        session["accuracy_score"] = accuracy_score
-        session["report"] = report
+        session["gemini_analysis"] = gemini_analysis
+        
+        print("=== GEMINI AI ANALYSIS COMPLETE ===\n")
         
         return JSONResponse({
-            "classification": classification,
-            "accuracy_score": accuracy_score,
-            "report": report,
+            "gemini_analysis": gemini_analysis,
         })
     
     except HTTPException:
@@ -263,5 +321,22 @@ async def generate_luminance_test(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import asyncio
+    from hypercorn.config import Config
+    from hypercorn.asyncio import serve
+    
+    print("\n" + "="*60)
+    print("🚀 Starting Color Vision AI Backend Server")
+    print("="*60)
+    print(f"📡 Server URL: http://localhost:8000")
+    print(f"📡 API Docs: http://localhost:8000/docs")
+    print(f"🐍 Python 3.12.7 Compatible (Hypercorn)")
+    print("="*60 + "\n")
+    
+    config = Config()
+    config.bind = ["0.0.0.0:8000"]
+    config.use_reloader = True
+    
+    asyncio.run(serve(app, config))

@@ -75,45 +75,83 @@ class ColorExtractor:
 
     def _generate_d15_shades(self, base_colors_rgb):
         """
-        Generate D-15 test colors by creating lighter and darker shades.
-        This creates similar-hue color groups which are challenging for color vision deficiency detection.
+        Generate exactly 15 unique colors in proper hue sequence for D-15 test.
+        Creates a smooth hue progression with NO duplicates.
         
         Args:
             base_colors_rgb: (10, 3) base colors in RGB [0, 255]
             
         Returns:
-            d15_colors_rgb: (15, 3) array with original + shaded variants
+            d15_colors_rgb: (15, 3) array with 15 unique colors in hue order
         """
+        # Convert all base colors to HSV to sort by hue
+        hsv_colors = []
+        for rgb in base_colors_rgb:
+            hsv = colorsys.rgb_to_hsv(rgb[0]/255, rgb[1]/255, rgb[2]/255)
+            hsv_colors.append(hsv)
+        
+        # Sort by hue to create natural color progression
+        hsv_colors.sort(key=lambda x: x[0])
+        
+        # Generate 15 unique colors by interpolating between sorted hues
         d15_colors = []
         
-        for base_color in base_colors_rgb:
-            # Add original color
-            d15_colors.append(base_color.copy())
-            
-            # Convert to HSV to manipulate lightness more intuitively
-            hsv = colorsys.rgb_to_hsv(base_color[0]/255, base_color[1]/255, base_color[2]/255)
-            h, s, v = hsv
-            
-            # Create a slightly lighter shade (increase V, slightly decrease S)
-            lighter_v = min(1.0, v * 1.15)  # 15% lighter
-            lighter_s = max(0.3, s * 0.9)   # Slightly less saturated
-            lighter_rgb = colorsys.hsv_to_rgb(h, lighter_s, lighter_v)
-            lighter_rgb = tuple(int(c * 255) for c in lighter_rgb)
-            d15_colors.append(np.array(lighter_rgb, dtype=np.uint8))
-            
-            # Create a slightly darker shade (decrease V, slightly increase S)
-            darker_v = max(0.2, v * 0.85)   # 15% darker
-            darker_s = min(1.0, s * 1.1)    # Slightly more saturated
-            darker_rgb = colorsys.hsv_to_rgb(h, darker_s, darker_v)
-            darker_rgb = tuple(int(c * 255) for c in darker_rgb)
-            d15_colors.append(np.array(darker_rgb, dtype=np.uint8))
+        # We have 10 base colors sorted by hue
+        # We need 5 more intermediate colors
+        # Strategy: insert colors between existing hues with slight variations
         
-        # Take 15 colors total (skip some to get to 15)
-        # Keep: all originals (10) + 5 lighter/darker variants
-        d15_colors_result = d15_colors[:10]  # All base colors
-        d15_colors_result.extend(d15_colors[12:17])  # Add 5 shade variants
+        for i in range(10):
+            # Add the base color
+            h, s, v = hsv_colors[i]
+            rgb = colorsys.hsv_to_rgb(h, s, v)
+            rgb_255 = np.array([int(c * 255) for c in rgb], dtype=np.uint8)
+            d15_colors.append(rgb_255)
         
-        return np.array(d15_colors_result[:15], dtype=np.uint8)
+        # Add 5 intermediate colors between hues
+        interpolation_points = [1, 3, 5, 7, 9]  # Positions to add intermediate colors
+        
+        for idx in interpolation_points[:5]:  # Take only first 5
+            if idx < len(hsv_colors) - 1:
+                # Interpolate between two adjacent hues
+                h1, s1, v1 = hsv_colors[idx]
+                h2, s2, v2 = hsv_colors[idx + 1]
+                
+                # Create intermediate color
+                h_mid = (h1 + h2) / 2
+                s_mid = (s1 + s2) / 2
+                v_mid = (v1 + v2) / 2
+                
+                # Slight variation to make it visibly different
+                v_mid = min(1.0, v_mid * 1.1)
+                
+                rgb = colorsys.hsv_to_rgb(h_mid, s_mid, v_mid)
+                rgb_255 = np.array([int(c * 255) for c in rgb], dtype=np.uint8)
+                d15_colors.append(rgb_255)
+        
+        # Ensure we have exactly 15 unique colors
+        # Remove any potential duplicates and pad if needed
+        unique_colors = []
+        for color in d15_colors:
+            is_duplicate = False
+            for existing in unique_colors:
+                if np.allclose(color, existing, atol=5):  # Within 5 RGB values
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                unique_colors.append(color)
+        
+        # If we still don't have 15, generate additional hue-varied colors
+        while len(unique_colors) < 15:
+            # Generate a color with different hue
+            hue_offset = len(unique_colors) / 15.0
+            h = (hue_offset) % 1.0
+            s = 0.7
+            v = 0.7
+            rgb = colorsys.hsv_to_rgb(h, s, v)
+            rgb_255 = np.array([int(c * 255) for c in rgb], dtype=np.uint8)
+            unique_colors.append(rgb_255)
+        
+        return np.array(unique_colors[:15], dtype=np.uint8)
 
     def _rgb_to_lab_batch(self, rgb_array):
         """

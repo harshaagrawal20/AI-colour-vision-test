@@ -120,20 +120,21 @@
         }
 
         .patch-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
             margin: 20px 0;
+            justify-content: center;
         }
 
         .patch {
-            width: 100%;
-            aspect-ratio: 1;
+            width: 50px;
+            height: 50px;
             border-radius: 8px;
             cursor: grab;
-            border: 3px solid transparent;
+            border: 2px solid transparent;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .patch:hover {
@@ -158,7 +159,7 @@
 
         .ordered-patches {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: nowrap;
             align-items: center;
             min-width: max-content;
@@ -166,7 +167,7 @@
 
         .ordered-patch {
             position: relative;
-            width: 60px;
+            width: 50px;
             height: 50px;
             border-radius: 6px;
             border: 2px solid #667eea;
@@ -180,19 +181,54 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
+        .empty-slot {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            border: 2px dashed #667eea;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+
+        .empty-slot:hover {
+            background: #f0f4ff;
+            border-color: #5566dd;
+        }
+
+        .empty-slot.drag-over {
+            background: #e8f0ff;
+            border-color: #4455cc;
+            transform: scale(1.05);
+        }
+
+        .patch.used {
+            opacity: 0.3;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
         .patch-index {
             position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 24px;
-            height: 24px;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
             background: #667eea;
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8em;
+            font-size: 0.7em;
             font-weight: bold;
         }
 
@@ -277,6 +313,82 @@
             margin-top: 15px;
             color: #555;
             line-height: 1.6;
+        }
+
+        /* Gemini AI Analysis Styles */
+        .gemini-analysis {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 2px solid #4285F4;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.1);
+        }
+
+        .gemini-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .gemini-header h3 {
+            margin: 0;
+            color: #1a73e8;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .gemini-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            color: #333;
+            line-height: 1.8;
+            font-size: 0.95em;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .gemini-content h4 {
+            color: #1a73e8;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .gemini-content ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .gemini-content li {
+            margin-bottom: 8px;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4285F4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .gemini-error {
+            color: #d32f2f;
+            padding: 15px;
+            background: #ffebee;
+            border-radius: 6px;
+            border-left: 4px solid #d32f2f;
         }
 
         .chart-container {
@@ -426,6 +538,21 @@
                 </div>
 
                 <div id="result-recommendation" class="recommendation hidden"></div>
+                
+                <!-- Gemini AI Analysis Section -->
+                <div id="gemini-analysis" class="gemini-analysis hidden">
+                    <div class="gemini-header">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#4285F4"/>
+                            <path d="M2 17L12 22L22 17L12 12L2 17Z" fill="#34A853"/>
+                            <path d="M2 12L12 17L22 12" stroke="#FBBC04" stroke-width="2"/>
+                        </svg>
+                        <h3>Gemini AI Medical Analysis</h3>
+                    </div>
+                    <div id="gemini-content" class="gemini-content">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="button-group">
@@ -479,6 +606,50 @@
             }
         });
 
+        // Helper function to resize images on client side
+        function resizeImage(file, maxWidth, maxHeight, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Calculate new dimensions
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height = height * (maxWidth / width);
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width = width * (maxHeight / height);
+                                height = maxHeight;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            }));
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function handleFileSelect() {
             const file = fileInput.files[0];
             if (!file) return;
@@ -488,35 +659,77 @@
             document.getElementById('upload-error').classList.add('hidden');
 
             try {
+                // Resize large images on client side for faster upload
+                let fileToUpload = file;
+                if (file.size > 500000) { // If larger than 500KB
+                    console.log('Large image detected, resizing before upload...');
+                    fileToUpload = await resizeImage(file, 800, 800, 0.85);
+                    console.log(`Resized from ${file.size} to ${fileToUpload.size} bytes`);
+                }
+                
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file', fileToUpload);
 
-                console.log('Uploading file:', file.name, file.type, file.size);
+                console.log('=== UPLOAD START ===');
+                console.log('File:', file.name, file.type, file.size, 'bytes');
+                console.log('API URL:', `${API_BASE}/upload-image`);
+
+                // Create abort controller for timeout (2 minutes for large images)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    console.warn('Upload timeout - aborting request');
+                    controller.abort();
+                }, 120000); // 2 minute timeout
 
                 const response = await fetch(`${API_BASE}/upload-image`, {
                     method: 'POST',
                     body: formData,
                     headers: {
                         'Accept': 'application/json',
-                    }
+                    },
+                    signal: controller.signal
                 });
 
+                clearTimeout(timeoutId);
+                console.log('Timeout cleared successfully');
                 console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
                 
                 if (!response.ok) {
                     const errorData = await response.text();
                     console.error('Error response:', errorData);
-                    throw new Error(`HTTP error! status: ${response.status} - ${errorData}`);
+                    throw new Error(`Upload failed (${response.status}): ${errorData}`);
                 }
 
                 const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (!data.session_id || !data.test_spec) {
+                    throw new Error('Invalid response: missing session_id or test_spec');
+                }
+                
                 sessionId = data.session_id;
                 testSpec = data.test_spec;
 
+                console.log('=== UPLOAD SUCCESS ===');
+                console.log('Session ID:', sessionId);
+                console.log('Test spec:', testSpec);
+
                 showTestSection();
             } catch (error) {
+                console.error('=== UPLOAD ERROR ===');
+                console.error('Error type:', error.name);
                 console.error('Error:', error);
-                document.getElementById('upload-error').textContent = `Error: ${error.message}`;
+                console.error('Stack:', error.stack);
+                
+                let errorMessage = error.message;
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Upload timed out (30 seconds). Image may be too large or backend is not responding.';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Cannot connect to backend server. Is it running on http://localhost:8000?';
+                }
+                
+                document.getElementById('upload-error').textContent = `Error: ${errorMessage}`;
                 document.getElementById('upload-error').classList.remove('hidden');
             } finally {
                 document.getElementById('upload-loading').classList.add('hidden');
@@ -527,14 +740,14 @@
             uploadSection.classList.add('hidden');
             testSection.classList.remove('hidden');
             resultsSection.classList.add('hidden');
-            userOrder = [];
+            userOrder = new Array(testSpec.n_colors).fill(null);
             renderPatchGrid();
         }
 
         function renderPatchGrid() {
             patchGrid.innerHTML = '';
-            orderingZone.innerHTML = '';
-
+            
+            // Render available colors
             testSpec.patch_configs.forEach((config, index) => {
                 const rgb = config.rgb;
                 const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
@@ -546,9 +759,20 @@
                 patch.dataset.colorIndex = config.color_index;
                 patch.dataset.rgb = JSON.stringify(rgb);
 
+                // Check if this color is already used in any slot
+                const isUsed = userOrder.includes(config.color_index);
+                if (isUsed) {
+                    patch.classList.add('used');
+                    patch.draggable = false; // Prevent dragging used colors
+                }
+
                 patch.addEventListener('dragstart', (e) => {
-                    draggedElement = patch;
-                    patch.classList.add('dragging');
+                    if (!patch.classList.contains('used')) {
+                        draggedElement = patch;
+                        patch.classList.add('dragging');
+                    } else {
+                        e.preventDefault();
+                    }
                 });
 
                 patch.addEventListener('dragend', () => {
@@ -558,68 +782,148 @@
                 patchGrid.appendChild(patch);
             });
 
-            orderingZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                orderingZone.style.backgroundColor = '#e8ebff';
-            });
-
-            orderingZone.addEventListener('dragleave', () => {
-                orderingZone.style.backgroundColor = '#f8f9ff';
-            });
-
-            orderingZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                orderingZone.style.backgroundColor = '#f8f9ff';
-                if (draggedElement && draggedElement.parentElement === patchGrid) {
-                    addToOrder(draggedElement);
-                }
-            });
-        }
-
-        function addToOrder(patch) {
-            const colorIndex = parseInt(patch.dataset.colorIndex);
-            
-            // Prevent duplicate colors - only add if not already in order
-            if (!userOrder.includes(colorIndex)) {
-                userOrder.push(colorIndex);
-                renderOrderingZone();
-                submitBtn.disabled = userOrder.length !== testSpec.n_colors;
-            }
+            renderOrderingZone();
         }
 
         function renderOrderingZone() {
             const orderedPatchesContainer = document.getElementById('ordered-patches');
             orderedPatchesContainer.innerHTML = '';
-            userOrder.forEach((colorIndex, position) => {
-                const config = testSpec.patch_configs.find(c => c.color_index === colorIndex);
-                const rgb = config.rgb;
-                const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+            
+            // Create 15 slots - always create exactly 15
+            for (let i = 0; i < testSpec.n_colors; i++) {
+                const colorIndex = userOrder[i];
+                
+                // Check if slot has a valid color (not null, not undefined)
+                const hasColor = colorIndex !== undefined && colorIndex !== null && colorIndex >= 0;
+                
+                if (hasColor) {
+                    // Filled slot
+                    const config = testSpec.patch_configs.find(c => c.color_index === colorIndex);
+                    if (!config) {
+                        console.error('Config not found for color index:', colorIndex);
+                        continue;
+                    }
+                    
+                    const rgb = config.rgb;
+                    const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
-                const orderedPatch = document.createElement('div');
-                orderedPatch.className = 'ordered-patch';
-                orderedPatch.style.backgroundColor = color;
+                    const orderedPatch = document.createElement('div');
+                    orderedPatch.className = 'ordered-patch';
+                    orderedPatch.style.backgroundColor = color;
+                    orderedPatch.dataset.slotIndex = i;
+                    orderedPatch.dataset.colorIndex = colorIndex;
 
-                const index = document.createElement('div');
-                index.className = 'patch-index';
-                index.textContent = position + 1;
-                orderedPatch.appendChild(index);
+                    const index = document.createElement('div');
+                    index.className = 'patch-index';
+                    index.textContent = i + 1;
+                    orderedPatch.appendChild(index);
 
-                orderedPatch.addEventListener('click', () => {
-                    // Click to remove this color from the sequence
-                    userOrder.splice(position, 1);
-                    renderOrderingZone();
-                    submitBtn.disabled = userOrder.length !== testSpec.n_colors;
-                });
+                    // Click to remove
+                    orderedPatch.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        removeFromSlot(i);
+                    });
 
-                orderedPatchesContainer.appendChild(orderedPatch);
-            });
+                    // Allow dropping on filled slots (to replace/swap)
+                    orderedPatch.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                    });
+
+                    orderedPatch.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        if (draggedElement && draggedElement !== orderedPatch) {
+                            addToSlot(i, draggedElement);
+                        }
+                    });
+
+                    orderedPatchesContainer.appendChild(orderedPatch);
+                } else {
+                    // Empty slot
+                    const emptySlot = document.createElement('div');
+                    emptySlot.className = 'empty-slot';
+                    emptySlot.textContent = i + 1;
+                    emptySlot.dataset.slotIndex = i;
+
+                    // Drag over
+                    emptySlot.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        emptySlot.classList.add('drag-over');
+                    });
+
+                    emptySlot.addEventListener('dragleave', () => {
+                        emptySlot.classList.remove('drag-over');
+                    });
+
+                    // Drop into slot
+                    emptySlot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        emptySlot.classList.remove('drag-over');
+                        if (draggedElement) {
+                            addToSlot(i, draggedElement);
+                        }
+                    });
+
+                    orderedPatchesContainer.appendChild(emptySlot);
+                }
+            }
+
+            // Update submit button - count only valid colors
+            const filledCount = userOrder.filter(x => x !== undefined && x !== null && x >= 0).length;
+            submitBtn.disabled = filledCount !== testSpec.n_colors;
+        }
+
+        function addToSlot(slotIndex, element) {
+            if (!element || !element.dataset || !element.dataset.colorIndex) {
+                return;
+            }
+            
+            const colorIndex = parseInt(element.dataset.colorIndex);
+            
+            // Validate color index
+            if (isNaN(colorIndex) || colorIndex < 0) {
+                return;
+            }
+            
+            // Check if from available colors
+            if (element.classList.contains('patch')) {
+                // Check if this color is already used in another slot
+                const existingSlotIndex = userOrder.findIndex((c, idx) => c === colorIndex && idx !== slotIndex);
+                
+                if (existingSlotIndex !== -1) {
+                    // Color already used - show error
+                    document.getElementById('test-error').textContent = 'This color is already used! Each color can only be used once.';
+                    document.getElementById('test-error').classList.remove('hidden');
+                    setTimeout(() => {
+                        document.getElementById('test-error').classList.add('hidden');
+                    }, 3000);
+                    return;
+                }
+                
+                // If slot is already filled, we're replacing it
+                // The old color will become available again
+                userOrder[slotIndex] = colorIndex;
+                
+                // Re-render everything to update states
+                renderPatchGrid();
+            }
+        }
+
+        function removeFromSlot(slotIndex) {
+            // Set slot to null (not undefined) to maintain array structure
+            if (slotIndex >= 0 && slotIndex < userOrder.length) {
+                userOrder[slotIndex] = null;
+                renderPatchGrid(); // Re-render to unmark as used
+            }
         }
 
         submitBtn.addEventListener('click', submitResponse);
 
         async function submitResponse() {
             try {
-                const response = await fetch(`${API_BASE}/submit-response?session_id=${sessionId}&user_order=${JSON.stringify(userOrder)}`, {
+                // Filter out nulls and send only the color order
+                const finalOrder = userOrder.filter(x => x !== null);
+                
+                const response = await fetch(`${API_BASE}/submit-response?session_id=${sessionId}&user_order=${JSON.stringify(finalOrder)}`, {
                     method: 'POST',
                 });
 
@@ -638,45 +942,70 @@
             testSection.classList.add('hidden');
             resultsSection.classList.remove('hidden');
 
-            const classification = data.classification;
-            const accuracy = data.accuracy_score;
-            const report = data.report;
-
-            document.getElementById('result-class').textContent = classification.predicted_class;
-            document.getElementById('result-accuracy').textContent = accuracy.toFixed(1) + '%';
-
-            const severityClass = `severity-${report.severity.toLowerCase()}`;
-            document.getElementById('result-severity').textContent = report.severity;
-            document.getElementById('result-severity').className = `result-value ${severityClass}`;
-
-            // Confidence bars
-            const confidenceDiv = document.getElementById('result-confidence');
-            confidenceDiv.innerHTML = '';
-
-            const probs = classification.class_probabilities;
-            Object.entries(probs).forEach(([className, prob]) => {
-                const bar = document.createElement('div');
-                bar.className = 'probability-bar';
-                bar.innerHTML = `
-                    <div class="probability-label">
-                        <span>${className}</span>
-                        <span>${(prob * 100).toFixed(1)}%</span>
-                    </div>
-                    <div style="background: #e0e0e0; height: 10px; border-radius: 4px; overflow: hidden;">
-                        <div class="probability-fill" style="width: ${prob * 100}%"></div>
+            // Hide ML classification sections (we only use Gemini AI now)
+            document.querySelector('.results-container').style.display = 'none';
+            
+            // Show ONLY Gemini AI Analysis
+            displayGeminiAnalysis(data.gemini_analysis);
+        }
+        
+        function displayGeminiAnalysis(geminiData) {
+            const geminiSection = document.getElementById('gemini-analysis');
+            const geminiContent = document.getElementById('gemini-content');
+            
+            if (!geminiData) {
+                geminiSection.classList.add('hidden');
+                return;
+            }
+            
+            geminiSection.classList.remove('hidden');
+            
+            if (geminiData.success && geminiData.ai_analysis) {
+                // Format the AI analysis with markdown-like rendering
+                const formattedAnalysis = formatGeminiAnalysis(geminiData.ai_analysis);
+                geminiContent.innerHTML = formattedAnalysis;
+            } else {
+                geminiContent.innerHTML = `
+                    <div class="gemini-error">
+                        <strong>⚠️ AI Analysis Unavailable</strong>
+                        <p>${geminiData.error || 'Gemini AI is not configured. Please set GEMINI_API_KEY in backend/.env file.'}</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">
+                            Get your free API key from: 
+                            <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: #1a73e8;">
+                                Google AI Studio
+                            </a>
+                        </p>
                     </div>
                 `;
-                confidenceDiv.appendChild(bar);
-            });
-
-            // Recommendation
-            const recDiv = document.getElementById('result-recommendation');
-            recDiv.textContent = report.recommendation;
-            recDiv.classList.remove('hidden');
+            }
+        }
+        
+        function formatGeminiAnalysis(text) {
+            // Simple markdown-like formatting
+            let formatted = text
+                // Bold text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                // Headers
+                .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+                .replace(/^## (.+)$/gm, '<h3 style="color: #1a73e8; font-size: 1.2em;">$1</h3>')
+                .replace(/^# (.+)$/gm, '<h2 style="color: #1a73e8; font-size: 1.4em;">$1</h2>')
+                // Bullet points
+                .replace(/^- (.+)$/gm, '<li>$1</li>')
+                .replace(/^• (.+)$/gm, '<li>$1</li>')
+                // Numbered lists
+                .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+            
+            // Wrap consecutive <li> in <ul>
+            formatted = formatted.replace(/(<li>.*<\/li>\s*)+/gs, match => `<ul>${match}</ul>`);
+            
+            // Add line breaks for paragraphs
+            formatted = formatted.replace(/\n\n/g, '<br><br>');
+            
+            return formatted;
         }
 
         resetBtn.addEventListener('click', () => {
-            userOrder = [];
+            userOrder = new Array(testSpec.n_colors).fill(null);
             renderPatchGrid();
             submitBtn.disabled = true;
             document.getElementById('test-error').classList.add('hidden');
