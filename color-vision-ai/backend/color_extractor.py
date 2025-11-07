@@ -1,5 +1,7 @@
 """
 Color extraction module: Convert images to LAB space and extract dominant colors.
+Optimized for D-15 test with smooth hue progression.
+NO BLACK/WHITE/GRAY shades - only colorful vibrant colors.
 """
 import numpy as np
 import cv2
@@ -32,126 +34,301 @@ class ColorExtractor:
             return image_array
         raise ValueError("Input must be numpy array in RGB format")
 
+    def extract_colors(self, image):
+        """
+        Extract 15 COLORFUL dominant colors (NO black/white/gray).
+        Returns both LAB and RGB formats.
+        
+        Args:
+            image: RGB image as numpy array (H, W, 3)
+            
+        Returns:
+            colors_lab: Colors in LAB space (15, 3)
+            colors_rgb: Colors in RGB space (15, 3) as list
+        """
+        # Reshape image to list of pixels
+        pixels = image.reshape(-1, 3).astype(np.float32)
+        
+        # FILTER OUT BLACK, WHITE, AND GRAY PIXELS
+        # Calculate brightness
+        brightness = np.mean(pixels, axis=1)
+        
+        # Calculate saturation (colorfulness)
+        rgb_max = np.max(pixels, axis=1)
+        rgb_min = np.min(pixels, axis=1)
+        saturation = (rgb_max - rgb_min) / (rgb_max + 1e-6)
+        
+        # Keep only COLORFUL pixels:
+        # - Not too dark (brightness > 40)
+        # - Not too bright (brightness < 240)
+        # - High saturation (> 0.25 = colorful, not gray)
+        mask = (brightness > 40) & (brightness < 240) & (saturation > 0.25)
+        colorful_pixels = pixels[mask]
+        
+        if self.verbose:
+            print(f"🎨 Filtered {len(colorful_pixels)} colorful pixels from {len(pixels)} total")
+        
+        # If not enough colorful pixels, lower threshold
+        if len(colorful_pixels) < 1000:
+            mask = (brightness > 30) & (brightness < 250) & (saturation > 0.15)
+            colorful_pixels = pixels[mask]
+            if self.verbose:
+                print(f"⚠️  Using relaxed filter: {len(colorful_pixels)} pixels")
+        
+        # Fallback: use all pixels if still not enough
+        if len(colorful_pixels) < 100:
+            colorful_pixels = pixels
+        
+        # Extract 5 base hues using K-means
+        base_clusters = min(5, len(colorful_pixels) // 100)
+        kmeans = KMeans(n_clusters=base_clusters, random_state=42, n_init=10)
+        kmeans.fit(colorful_pixels)
+        
+        # Get base colors (RGB)
+        base_colors_rgb = kmeans.cluster_centers_.astype(np.uint8)
+        
+        # Generate smooth 15-color D-15 progression
+        colors_rgb = self._generate_d15_smooth_progression(base_colors_rgb)
+        
+        # Convert to LAB
+        rgb_normalized = colors_rgb.astype(float) / 255.0
+        colors_lab = self._rgb_to_lab_batch(rgb_normalized)
+        
+        return colors_lab, colors_rgb.tolist()
+
     def extract_dominant_colors(self, image, convert_to_lab=True, use_d15_shading=False):
         """
         Extract dominant colors using K-Means clustering.
+        Legacy method for backward compatibility.
         
         Args:
             image: RGB image as numpy array (H, W, 3)
             convert_to_lab: If True, return colors in LAB space; else RGB
-            use_d15_shading: If True, generate shaded variants for D-15 test accuracy
+            use_d15_shading: If True, generate 15 colors optimized for D-15 test
             
         Returns:
             dominant_colors: (n_colors, 3) array in LAB or RGB
             labels: cluster labels for each pixel
             inertia: KMeans inertia
         """
-        # Reshape image to list of pixels
+        if use_d15_shading:
+            # Use new colorful extraction method
+            colors_lab, colors_rgb = self.extract_colors(image)
+            if convert_to_lab:
+                return colors_lab, None, None
+            return np.array(colors_rgb), None, None
+        
+        # Original method
         pixels = image.reshape(-1, 3).astype(np.float32)
+        base_colors = 5 if use_d15_shading else self.n_colors
         
-        # For D-15 test, use 10 base colors (we'll expand to 15 with shades)
-        base_colors = 10 if use_d15_shading else self.n_colors
-        
-        # Apply KMeans
         kmeans = KMeans(n_clusters=base_colors, random_state=42, n_init=10)
         kmeans.fit(pixels)
         
-        # Get cluster centers (RGB)
         dominant_colors_rgb = kmeans.cluster_centers_.astype(np.uint8)
         
-        # If D-15 shading is requested, expand colors with lighter/darker variants
         if use_d15_shading:
-            dominant_colors_rgb = self._generate_d15_shades(dominant_colors_rgb)
+            dominant_colors_rgb = self._generate_d15_smooth_progression(dominant_colors_rgb)
         
-        # Convert to LAB if requested
         if convert_to_lab:
-            # Normalize RGB to [0, 1]
             rgb_normalized = dominant_colors_rgb.astype(float) / 255.0
-            # Convert to LAB
             lab_colors = self._rgb_to_lab_batch(rgb_normalized)
             return lab_colors, kmeans.labels_, kmeans.inertia_
         
         return dominant_colors_rgb, kmeans.labels_, kmeans.inertia_
 
-    def _generate_d15_shades(self, base_colors_rgb):
+    def _generate_d15_smooth_progression(self, base_colors_rgb):
         """
-        Generate exactly 15 unique colors in proper hue sequence for D-15 test.
-        Creates a smooth hue progression with NO duplicates.
+        Generate exactly 15 COLORFUL colors in smooth hue progression for D-15 test.
+        NO black, white, or gray shades.
+        
+        Strategy: Extract base hues, sort by hue angle, create 3 vibrant shades per hue.
+        
+        Reference Color Selection:
+        - Colors sorted by hue angle (0-360° on color wheel)
+        - First color (smallest angle, ~0° red region) = FIXED REFERENCE
+        - This mimics real D-15 Farnsworth test methodology
+        
+        Color Wheel Reference:
+        - 0°/360° = Red (typically the reference)
+        - 30° = Orange
+        - 60° = Yellow
+        - 120° = Green
+        - 180° = Cyan
+        - 240° = Blue
+        - 300° = Magenta
         
         Args:
-            base_colors_rgb: (10, 3) base colors in RGB [0, 255]
+            base_colors_rgb: (N, 3) base colors in RGB [0, 255]
             
         Returns:
-            d15_colors_rgb: (15, 3) array with 15 unique colors in hue order
+            d15_colors_rgb: (15, 3) array with 15 vibrant colors in smooth progression
         """
-        # Convert all base colors to HSV to sort by hue
-        hsv_colors = []
+        if self.verbose:
+            print(f"🎨 Generating D-15 progression from {len(base_colors_rgb)} base colors")
+        
+        # Convert base colors to HSV and sort by hue
+        hsv_base = []
         for rgb in base_colors_rgb:
-            hsv = colorsys.rgb_to_hsv(rgb[0]/255, rgb[1]/255, rgb[2]/255)
-            hsv_colors.append(hsv)
+            # Ensure RGB values are in proper range
+            rgb_norm = np.clip(rgb, 0, 255)
+            h, s, v = colorsys.rgb_to_hsv(rgb_norm[0]/255, rgb_norm[1]/255, rgb_norm[2]/255)
+            
+            # SKIP grayscale colors (low saturation or extreme brightness)
+            if s < 0.2 or v < 0.15 or v > 0.95:
+                if self.verbose:
+                    print(f"⚠️  Skipping grayscale color: RGB{rgb}, S={s:.2f}, V={v:.2f}")
+                continue
+                
+            hsv_base.append((h, s, v, rgb_norm))
         
-        # Sort by hue to create natural color progression
-        hsv_colors.sort(key=lambda x: x[0])
+        # If too few colorful base colors, generate some
+        if len(hsv_base) < 3:
+            if self.verbose:
+                print(f"⚠️  Only {len(hsv_base)} colorful base colors, generating more...")
+            hsv_base = self._generate_colorful_base_hues()
         
-        # Generate 15 unique colors by interpolating between sorted hues
+        # Sort by hue to create natural color wheel progression
+        # First hue (smallest angle) will be the REFERENCE color
+        hsv_base.sort(key=lambda x: x[0])
+        
+        if self.verbose:
+            hue_degrees = [round(h*360) for h, s, v, _ in hsv_base]
+            print(f"📊 Base hues (sorted): {hue_degrees}°")
+            print(f"🎯 Reference color will be at ~{hue_degrees[0]}° (first in progression)")
+        
+        # Generate 15 colors: 3 vibrant shades per hue
         d15_colors = []
+        n_base = len(hsv_base)
+        shades_per_hue = 3
         
-        # We have 10 base colors sorted by hue
-        # We need 5 more intermediate colors
-        # Strategy: insert colors between existing hues with slight variations
-        
-        for i in range(10):
-            # Add the base color
-            h, s, v = hsv_colors[i]
-            rgb = colorsys.hsv_to_rgb(h, s, v)
-            rgb_255 = np.array([int(c * 255) for c in rgb], dtype=np.uint8)
-            d15_colors.append(rgb_255)
-        
-        # Add 5 intermediate colors between hues
-        interpolation_points = [1, 3, 5, 7, 9]  # Positions to add intermediate colors
-        
-        for idx in interpolation_points[:5]:  # Take only first 5
-            if idx < len(hsv_colors) - 1:
-                # Interpolate between two adjacent hues
-                h1, s1, v1 = hsv_colors[idx]
-                h2, s2, v2 = hsv_colors[idx + 1]
+        for i in range(min(5, n_base)):
+            h, s, v, original_rgb = hsv_base[i % n_base]
+            
+            # Create 3 VIBRANT shades (ensure high saturation, no gray)
+            # Shade 1: Lighter, vibrant
+            h1 = h
+            s1 = max(0.5, min(1.0, s * 0.9))  # Keep saturation high
+            v1 = min(0.95, v * 1.2)
+            
+            # Shade 2: Medium, vibrant (original)
+            h2 = h
+            s2 = max(0.5, min(1.0, s))
+            v2 = max(0.3, min(0.9, v))
+            
+            # Shade 3: Darker, vibrant
+            h3 = h
+            s3 = max(0.6, min(1.0, s * 1.1))  # Increase saturation for darker shade
+            v3 = max(0.25, v * 0.7)
+            
+            # Convert back to RGB
+            for hue, sat, val in [(h1, s1, v1), (h2, s2, v2), (h3, s3, v3)]:
+                r, g, b = colorsys.hsv_to_rgb(hue, sat, val)
+                rgb_255 = np.array([int(r * 255), int(g * 255), int(b * 255)], dtype=np.uint8)
                 
-                # Create intermediate color
-                h_mid = (h1 + h2) / 2
-                s_mid = (s1 + s2) / 2
-                v_mid = (v1 + v2) / 2
-                
-                # Slight variation to make it visibly different
-                v_mid = min(1.0, v_mid * 1.1)
-                
-                rgb = colorsys.hsv_to_rgb(h_mid, s_mid, v_mid)
-                rgb_255 = np.array([int(c * 255) for c in rgb], dtype=np.uint8)
+                # Double-check: skip if accidentally grayscale
+                if self._is_grayscale(rgb_255):
+                    continue
+                    
                 d15_colors.append(rgb_255)
         
-        # Ensure we have exactly 15 unique colors
-        # Remove any potential duplicates and pad if needed
-        unique_colors = []
-        for color in d15_colors:
+        # Remove near-duplicates
+        d15_colors = self._remove_duplicate_colors(d15_colors, threshold=15)
+        
+        # If not enough colors, generate with more variation
+        if len(d15_colors) < 15:
+            if self.verbose:
+                print(f"⚠️  Only {len(d15_colors)} unique colors, adding more variation...")
+            d15_colors = self._generate_with_more_variation(hsv_base, d15_colors)
+        
+        # Ensure exactly 15 colors
+        d15_colors = d15_colors[:15]
+        
+        if self.verbose:
+            print(f"✅ Generated {len(d15_colors)} vibrant colors for D-15 test")
+        
+        return np.array(d15_colors, dtype=np.uint8)
+    
+    def _is_grayscale(self, rgb):
+        """Check if RGB color is grayscale (low saturation)."""
+        rgb_max = np.max(rgb)
+        rgb_min = np.min(rgb)
+        saturation = (rgb_max - rgb_min) / (rgb_max + 1e-6)
+        brightness = np.mean(rgb)
+        
+        # Grayscale if: low saturation OR extreme brightness
+        return saturation < 0.2 or brightness < 35 or brightness > 245
+    
+    def _generate_colorful_base_hues(self):
+        """Generate 5 vibrant base hues across color wheel."""
+        base_hues = [0, 0.17, 0.33, 0.5, 0.67]  # Red, Yellow, Green, Cyan, Blue
+        hsv_base = []
+        
+        for h in base_hues:
+            s = 0.8  # High saturation
+            v = 0.7  # Medium brightness
+            r, g, b = colorsys.hsv_to_rgb(h, s, v)
+            rgb = np.array([int(r*255), int(g*255), int(b*255)], dtype=np.uint8)
+            hsv_base.append((h, s, v, rgb))
+        
+        return hsv_base
+    
+    def _generate_with_more_variation(self, hsv_base, existing_colors):
+        """
+        Generate more colorful variations when needed.
+        """
+        d15_colors = existing_colors.copy()
+        
+        while len(d15_colors) < 15:
+            for i in range(len(hsv_base)):
+                if len(d15_colors) >= 15:
+                    break
+                    
+                h, s, v, _ = hsv_base[i]
+                
+                # Create highly saturated variation
+                h_var = (h + np.random.uniform(-0.05, 0.05)) % 1.0
+                s_var = max(0.5, min(1.0, s + np.random.uniform(-0.1, 0.2)))
+                v_var = max(0.3, min(0.9, v + np.random.uniform(-0.2, 0.2)))
+                
+                r, g, b = colorsys.hsv_to_rgb(h_var, s_var, v_var)
+                rgb_255 = np.array([int(r * 255), int(g * 255), int(b * 255)], dtype=np.uint8)
+                
+                # Only add if colorful and not duplicate
+                if not self._is_grayscale(rgb_255):
+                    is_duplicate = False
+                    for existing in d15_colors:
+                        dist = np.sqrt(np.sum((rgb_255.astype(float) - existing.astype(float)) ** 2))
+                        if dist < 15:
+                            is_duplicate = True
+                            break
+                    if not is_duplicate:
+                        d15_colors.append(rgb_255)
+        
+        return d15_colors
+    
+    def _remove_duplicate_colors(self, colors, threshold=10):
+        """
+        Remove near-duplicate colors based on RGB distance threshold.
+        
+        Args:
+            colors: List of RGB colors
+            threshold: Minimum RGB distance to consider colors as different
+            
+        Returns:
+            List of unique colors
+        """
+        unique = []
+        for color in colors:
             is_duplicate = False
-            for existing in unique_colors:
-                if np.allclose(color, existing, atol=5):  # Within 5 RGB values
+            for existing in unique:
+                dist = np.sqrt(np.sum((color.astype(float) - existing.astype(float)) ** 2))
+                if dist < threshold:
                     is_duplicate = True
                     break
             if not is_duplicate:
-                unique_colors.append(color)
-        
-        # If we still don't have 15, generate additional hue-varied colors
-        while len(unique_colors) < 15:
-            # Generate a color with different hue
-            hue_offset = len(unique_colors) / 15.0
-            h = (hue_offset) % 1.0
-            s = 0.7
-            v = 0.7
-            rgb = colorsys.hsv_to_rgb(h, s, v)
-            rgb_255 = np.array([int(c * 255) for c in rgb], dtype=np.uint8)
-            unique_colors.append(rgb_255)
-        
-        return np.array(unique_colors[:15], dtype=np.uint8)
+                unique.append(color)
+        return unique
 
     def _rgb_to_lab_batch(self, rgb_array):
         """
