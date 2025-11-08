@@ -731,10 +731,16 @@
                 resultsSection.classList.remove('hidden');
                 document.getElementById('results-loading').classList.remove('hidden');
 
-                const response = await fetch(
-                    `${API_BASE}/submit-response?session_id=${sessionId}&user_order=${JSON.stringify(completeOrder)}`,
-                    { method: 'POST' }
-                );
+                const response = await fetch(`${API_BASE}/submit-response`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        user_order: completeOrder
+                    })
+                });
 
                 if (!response.ok) {
                     throw new Error(await response.text());

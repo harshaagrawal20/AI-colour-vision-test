@@ -2,13 +2,15 @@ from dotenv import load_dotenv
 import os
 
 # Load .env file at startup
-load_dotenv()
 import google.generativeai as genai
 from typing import Dict, List, Any
 import math
 
+
+
 class GeminiAnalyzer:
     def __init__(self, api_key: str = None):
+        load_dotenv()
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("Gemini API key not provided. Set GEMINI_API_KEY environment variable or pass it to constructor.")

@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import cv2
 import uvicorn
+from typing import List
 
 from color_extractor import ColorExtractor
 from test_generator import TestGenerator
@@ -130,12 +131,15 @@ async def upload_image(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from pydantic import BaseModel
+class SubmitRequest(BaseModel):
+    session_id: str
+    user_order: List[int]
 
 @app.post("/submit-response")
-async def submit_response(
-    session_id: str,
-    user_order: str,
-):
+async def submit_response(data: SubmitRequest):
+    session_id = data.session_id
+    user_order = data.user_order
     """
     Submit user's color ordering response and get AI analysis from Gemini.
     Now uses VIBGYOR sequence as the reference instead of fixed reference pad.
@@ -147,10 +151,10 @@ async def submit_response(
         session = test_sessions[session_id]
         
         # Parse user_order from JSON string
-        try:
-            user_order = json.loads(user_order)
-        except (json.JSONDecodeError, TypeError):
-            raise HTTPException(status_code=400, detail="user_order must be a valid JSON array")
+        # try:
+        #     user_order = json.loads(user_order)
+        # except (json.JSONDecodeError, TypeError):
+        #     raise HTTPException(status_code=400, detail="user_order must be a valid JSON array")
         
         expected_length = session["test_spec"]["n_colors"]
         if len(user_order) != expected_length:
