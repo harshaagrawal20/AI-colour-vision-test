@@ -450,6 +450,15 @@
                 </ol>
             </div>
             
+            <!-- Reference Color Display -->
+            <div style="margin-bottom: 20px;">
+                <div style="font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em;">
+                    Reference Color:
+                </div>
+                <div id="reference-pad" style="width: 80px; height: 80px; border-radius: 12px; border: 4px solid #667eea; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 20px;">
+                </div>
+            </div>
+
             <div style="margin-bottom: 20px;">
                 <div style="font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em;">
                     Available Colors:
@@ -604,9 +613,16 @@
             testSection.classList.remove('hidden');
             resultsSection.classList.add('hidden');
             
-            // ✅ Use full color count (no subtraction)
+            // ✅ Use full color count (all 15 colors including reference)
             userOrder = new Array(testSpec.n_colors).fill(null);
             document.getElementById('total-count').textContent = testSpec.n_colors;
+            
+            // Display reference color pad
+            const referencePad = document.getElementById('reference-pad');
+            if (testSpec.reference_color) {
+                const rgb = testSpec.reference_color.rgb;
+                referencePad.style.backgroundColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+            }
             
             renderPatchGrid();
         }
@@ -722,10 +738,10 @@
 
         submitBtn.addEventListener('click', async () => {
             try {
-                // Prepend reference color (index 0)
+                // Use the complete user order (including reference color)
                 const completeOrder = userOrder;
                 
-                console.log('Submitting order:', completeOrder);
+                console.log('Submitting order with reference:', completeOrder);
 
                 testSection.classList.add('hidden');
                 resultsSection.classList.remove('hidden');
@@ -816,5 +832,4 @@
     </script>
 </body>
 </html>
-
 

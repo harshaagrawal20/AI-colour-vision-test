@@ -30,7 +30,7 @@ class GeminiAnalyzer:
     ) -> Dict[str, Any]:
         try:
             # 1️⃣ Compute vibgyor order analysis before building prompt
-            vibgyor_result = self._calculate_vibgyor_alignment(reference_colors_lab, user_order)
+            hue_alignment = self._calculate_hue_alignment(reference_colors_lab, user_order)
             
             # 2️⃣ Build prompt (now includes vibgyor_result)
             prompt = self._build_analysis_prompt(
@@ -66,10 +66,12 @@ class GeminiAnalyzer:
     # ---------------------------------------------------------
     # 🔹 VIBGYOR CHECK FUNCTION
     # ---------------------------------------------------------
-    def _calculate_vibgyor_alignment(self, reference_colors_lab, user_order):
+    def _calculate_hue_alignment(self, reference_colors_lab, user_order):
         """
-        Calculate whether the user's order roughly matches the VIBGYOR hue sequence.
+        Compare user's color sequence to the reference pad hues.
+        Uses hue angle similarity (in LAB -> hue conversion) instead of fixed VIBGYOR order.
         """
+
         def lab_to_hue(lab):
             L, a, b = lab
             hue = math.degrees(math.atan2(b, a))
@@ -77,25 +79,37 @@ class GeminiAnalyzer:
                 hue += 360
             return hue
 
-        # Convert colors to hue values
-        hues = [lab_to_hue(reference_colors_lab[i]) for i in user_order]
-        
-        # Check monotonic increase in hue values (approximation)
-        increasing = all(hues[i] <= hues[i+1] + 10 for i in range(len(hues)-1))  # tolerance of ±10 degrees
+        # Compute hue angles for both reference pad and user-selected order
+        ref_hues = [lab_to_hue(c) for c in reference_colors_lab]
+        user_hues = [ref_hues[i] for i in user_order]  # reorder based on user’s arrangement
 
-        # Simple interpretation
-        if increasing:
-            return {
-                "status": "Aligned",
-                "message": "The user's color arrangement approximately follows the VIBGYOR order (Red → Violet).",
-                "hues": [round(h, 1) for h in hues]
-            }
+        # Calculate average absolute hue difference from the perfect reference order
+        total_diff = 0
+        for i in range(len(ref_hues)):
+            diff = abs(user_hues[i] - ref_hues[i])
+            diff = min(diff, 360 - diff)  # handle hue wrap-around (e.g., 350° vs 10°)
+            total_diff += diff
+        avg_diff = total_diff / len(ref_hues)
+
+        # Interpretation
+        if avg_diff < 15:
+            status = "Excellent alignment"
+            message = "User closely followed the reference color sequence."
+        elif avg_diff < 35:
+            status = "Moderate alignment"
+            message = "User’s order roughly follows the reference hues, with minor deviations."
         else:
-            return {
-                "status": "Not Aligned",
-                "message": "The user's arrangement does not follow the expected VIBGYOR hue progression.",
-                "hues": [round(h, 1) for h in hues]
-            }
+            status = "Poor alignment"
+            message = "User’s color arrangement significantly deviates from the reference hues."
+
+        return {
+            "status": status,
+            "message": message,
+            "average_hue_difference": round(avg_diff, 2),
+            "reference_hues": [round(h, 1) for h in ref_hues],
+            "user_hues": [round(h, 1) for h in user_hues],
+        }
+
 
     # ---------------------------------------------------------
     # 🔹 BUILD PROMPT WITH VIBGYOR SECTION
@@ -107,52 +121,40 @@ class GeminiAnalyzer:
         reference_colors_lab: List[List[float]],
         classification: Dict[str, Any],
         accuracy_score: float,
-        vibgyor_result: Dict[str, Any]
+        hue_alignment: Dict[str, Any]
     ) -> str:
-        colors_info = []
-        for idx, color_lab in enumerate(reference_colors_lab):
-            colors_info.append(f"Color {idx}: LAB({color_lab[0]:.1f}, {color_lab[1]:.1f}, {color_lab[2]:.1f})")
-
-        # Calculate arrangement errors
-        errors = []
-        correct_count = 0
-        for i, (ref, user) in enumerate(zip(reference_order, user_order)):
-            if ref != user:
-                errors.append(f"Position {i+1}: Expected color {ref}, got color {user}")
-            else:
-                correct_count += 1
-
-        calculated_accuracy = (correct_count / len(reference_order)) * 100
-
-        # ✅ NEW SECTION: VIBGYOR order info
-        vibgyor_section = f"""
-**VIBGYOR Order Analysis**
-- Status: {vibgyor_result['status']}
-- Details: {vibgyor_result['message']}
-- Computed Hue Angles: {vibgyor_result['hues']}
-"""
-
+        ...
+        hue_section = f"""
+    **Hue Angle Alignment Analysis**
+    - Status: {hue_alignment['status']}
+    - Details: {hue_alignment['message']}
+    - Average Hue Difference: {hue_alignment['average_hue_difference']}°
+    - Reference Hues: {hue_alignment['reference_hues']}
+    - User Hues: {hue_alignment['user_hues']}
+    """
+        ...
         prompt = f"""You are an expert ophthalmologist specializing in color vision analysis.
-Analyze this Farnsworth D-15 test result and determine if the user arranged colors in proper perceptual order (VIBGYOR).
+    Analyze this Farnsworth D-15 test result and evaluate hue-based alignment with the reference pad.
 
-**Test Summary**
-- Total Colors: {len(reference_order)}
-- Correct Placements: {correct_count} / {len(reference_order)}
-- Accuracy: {calculated_accuracy:.1f}%
-- Classification: {classification}
-- Accuracy Score from ML: {accuracy_score:.1f}%
+    **Test Summary**
+    - Total Colors: {len(reference_order)}
+    - Correct Placements: {correct_count} / {len(reference_order)}
+    - Accuracy: {calculated_accuracy:.1f}%
+    - Classification: {classification}
+    - Accuracy Score from ML: {accuracy_score:.1f}%
 
-**Color Data (LAB):**
-{chr(10).join(colors_info)}
+    **Color Data (LAB):**
+    {chr(10).join(colors_info)}
 
-**Reference Order:** {reference_order}
-**User Order:** {user_order}
+    **Reference Order:** {reference_order}
+    **User Order:** {user_order}
 
-{vibgyor_section}
+    {hue_section}
 
-**Errors:** {chr(10).join(errors) if errors else "No errors detected."}
+    **Errors:** {chr(10).join(errors) if errors else "No errors detected."}
 
-Now, provide a full diagnostic analysis as before — include color deficiency diagnosis, accuracy interpretation, and practical recommendations.
-If the VIBGYOR order is not followed, explain what color transitions are confused.
-"""
+    Provide a diagnostic interpretation focusing on hue confusion patterns (e.g., red–green or blue–purple mix-ups)
+    and describe what type of color deficiency might cause such deviations.
+    """
         return prompt
+

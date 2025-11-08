@@ -18,38 +18,47 @@ class TestGenerator:
 
     def generate_test(self, dominant_colors_lab):
         """
-        Generate a simplified color vision test from dominant colors in LAB space.
-        (No reference pad or reference color.)
+        Generate a color vision test including a fixed reference pad (first color).
         """
         n_colors = len(dominant_colors_lab)
+        if n_colors < 2:
+            raise ValueError("At least 2 colors are required to generate a test")
 
-        # Randomized user order
-        user_order = np.random.permutation(n_colors)
+        # First color = reference pad (fixed)
+        reference_pad_lab = dominant_colors_lab[0]
+        movable_colors_lab = dominant_colors_lab[1:]
+
+        # Randomized order for movable colors
+        user_order = np.random.permutation(len(movable_colors_lab))
 
         # Convert LAB → RGB
         rgb_colors = self.color_extractor.lab_to_rgb(dominant_colors_lab)
+        reference_rgb = rgb_colors[0]
+        movable_rgb = rgb_colors[1:]
 
-        # Build test specification
+        # Build structured test specification
         test_spec = {
             "test_type": self.test_type,
-            "n_colors": n_colors,
-            "colors_lab": dominant_colors_lab.tolist(),
-            "colors_rgb": rgb_colors.tolist(),
-            "user_test_order": [int(x) for x in user_order],
-            "message": "Color vision test generated successfully (no reference pad)",
+            "n_total_colors": n_colors,
+            "n_movable": len(movable_colors_lab),
+            "reference_pad_lab": reference_pad_lab.tolist(),
+            "reference_pad_rgb": reference_rgb.tolist(),
+            "movable_colors_lab": movable_colors_lab.tolist(),
+            "movable_colors_rgb": movable_rgb.tolist(),
+            "initial_user_order": [int(x) for x in user_order],
             "patch_configs": [
                 {
-                    "color_index": int(idx),
-                    "lab": dominant_colors_lab[idx].tolist(),
-                    "rgb": rgb_colors[idx].tolist(),
-                    "luminance": float(dominant_colors_lab[idx, 0]),
+                    "color_index": int(idx + 1),  # +1 because color 0 is reference
+                    "lab": movable_colors_lab[idx].tolist(),
+                    "rgb": movable_rgb[idx].tolist(),
+                    "luminance": float(movable_colors_lab[idx, 0]),
                 }
                 for idx in user_order
             ],
+            "message": "Color vision test generated successfully (with reference pad)",
         }
 
         return test_spec
-
 
     def generate_distractor_test(self, dominant_colors_lab, n_distractors=3):
         """
