@@ -136,18 +136,22 @@ async def upload_image(file: UploadFile = File(...)):
             # Choose color with lowest hue angle as reference (closest to red at 0°)
             ref_index = int(np.argmin(hue_angles))
 
-            # Reorder colors to put reference first (TestGenerator expects reference at index 0)
-            colors_reordered = np.vstack([
-                dominant_colors_lab[ref_index:ref_index+1],  # Reference color first
-                dominant_colors_lab[:ref_index],             # Colors before reference
-                dominant_colors_lab[ref_index+1:]            # Colors after reference
+            # ✅ REFERENCE COLOR KO DUPLICATE KARO
+            # Array mein reference color ko include karo (total 15 colors with reference duplicate)
+            # Index 0: Reference color (duplicate for pad)
+            # Index 1-15: All 15 original colors (including reference again at its original position)
+            colors_with_reference_duplicate = np.vstack([
+                dominant_colors_lab[ref_index:ref_index+1],  # Reference color (duplicate for pad)
+                dominant_colors_lab                          # All 15 colors (including reference)
             ])
 
-            # Generate test (reference is now at index 0)
-            test_spec = test_generator.generate_test(colors_reordered)
+            # Generate test (now has 16 total: 1 reference duplicate + 15 original colors)
+            test_spec = test_generator.generate_test(colors_with_reference_duplicate)
             
-            # Ensure n_colors matches the number of returned colors
+            # n_colors = 15 (original colors for arrangement)
             test_spec["n_colors"] = int(len(dominant_colors_lab))
+            test_spec["reference_index"] = 0  # Reference is at index 0
+            test_spec["total_colors"] = int(len(colors_with_reference_duplicate))  # 16 total
 
             # Build an explicit reference_color object for frontend using the first color (now our chosen reference)
             try:

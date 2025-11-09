@@ -630,7 +630,13 @@
         function renderPatchGrid() {
             patchGrid.innerHTML = '';
             
+            // ✅ Skip index 0 (reference color) - only show indices 1-15 (the 15 colors to arrange)
             testSpec.patch_configs.forEach(config => {
+                // Skip the reference color at index 0
+                if (config.color_index === 0) {
+                    return; // Don't display reference in available colors
+                }
+                
                 const rgb = config.rgb;
                 const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
