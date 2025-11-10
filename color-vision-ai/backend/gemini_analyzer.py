@@ -29,10 +29,10 @@ class GeminiAnalyzer:
         accuracy_score: float
     ) -> Dict[str, Any]:
         try:
-            # 1️⃣ Compute vibgyor order analysis before building prompt
+            # Compute vibgyor order analysis before building prompt
             vibgyor_result = self._calculate_hue_alignment(reference_colors_lab, user_order)
             
-            # 2️⃣ Build prompt (now includes vibgyor_result)
+            # Build prompt (now includes vibgyor_result)
             prompt = self._build_analysis_prompt(
                 reference_order,
                 user_order,
@@ -42,7 +42,7 @@ class GeminiAnalyzer:
                 vibgyor_result
             )
             
-            # 3️⃣ Generate Gemini analysis
+            # Generate Gemini analysis
             response = self.model.generate_content(prompt)
             analysis_text = response.text
             
@@ -64,7 +64,7 @@ class GeminiAnalyzer:
             }
 
     # ---------------------------------------------------------
-    # 🔹 VIBGYOR CHECK FUNCTION
+    # VIBGYOR CHECK FUNCTION
     # ---------------------------------------------------------
     def _calculate_hue_alignment(self, reference_colors_lab, user_order):
         """
@@ -112,7 +112,7 @@ class GeminiAnalyzer:
 
 
     # ---------------------------------------------------------
-    # 🔹 BUILD PROMPT WITH VIBGYOR SECTION
+    # BUILD PROMPT WITH VIBGYOR SECTION
     # ---------------------------------------------------------
     def _build_analysis_prompt(
         self,
@@ -169,7 +169,7 @@ Analyze this Farnsworth D-15 test result and evaluate hue-based alignment with t
 
 Please provide your analysis in the following format:
 
-## 📋 Executive Summary
+## Executive Summary
 
 Provide a brief 1-2 sentence summary for each of the following 8 key points:
 
@@ -184,30 +184,30 @@ Provide a brief 1-2 sentence summary for each of the following 8 key points:
 
 ---
 
-## 📊 Detailed Analysis
+## Detailed Analysis
 
-### 1. 🎯 Diagnosis
+### 1. Diagnosis
 Provide a clear and comprehensive diagnosis based on the test results. Explain what type of color vision deficiency (if any) is indicated.
 
-### 2. 📊 Clinical Assessment
+### 2. Clinical Assessment
 Detailed analysis of the color arrangement pattern. Explain which colors were confused, what patterns emerged, and what this indicates clinically.
 
-### 3. 🔬 Accuracy Analysis
+### 3. Accuracy Analysis
 Interpret the accuracy score in detail. Explain what the {calculated_accuracy:.1f}% accuracy means, how it compares to normal vision, and what factors influenced this score.
 
-### 4. 💡 Recommendations
+### 4. Recommendations
 Provide practical, actionable recommendations for the user. Include testing recommendations, lifestyle adjustments, and next steps.
 
-### 5. 🏥 Medical Guidance
+### 5. Medical Guidance
 Explain when professional medical consultation is needed, what to expect during a professional eye exam, and what treatments or interventions might be available.
 
-### 6. 💼 Career Guidance
+### 6. Career Guidance
 Discuss career implications and considerations. Include professions that may be affected, alternative career paths, and workplace accommodations.
 
-### 7. 🛠️ Coping Strategies
+### 7. Coping Strategies
 Provide detailed daily life tips, assistive technologies, and practical tools for managing color vision challenges.
 
-### 8. 🔍 Technical Explanation
+### 8. Technical Explanation
 Provide a scientific explanation of the color confusion patterns observed. Explain the biology of color vision, which cone cells are affected, and why specific color confusions occur.
 
 Keep the language clear, professional, and compassionate. Use markdown formatting for better readability.

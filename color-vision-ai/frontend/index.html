@@ -13,17 +13,18 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #fff8f0 0%, #f7eedd 100%);
             min-height: 100vh;
             padding: 20px;
+            color: #3b3b3b;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: #fffdf8;
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
             padding: 40px;
         }
 
@@ -33,13 +34,13 @@
         }
 
         .header h1 {
-            color: #333;
+            color: #4b3b28;
             font-size: 2.5em;
             margin-bottom: 10px;
         }
 
         .header .subtitle {
-            color: #666;
+            color: #7c6f5b;
             font-size: 1.1em;
         }
 
@@ -47,13 +48,14 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: linear-gradient(135deg, #4285F4, #34A853, #FBBC04, #EA4335);
-            color: white;
+            background: linear-gradient(135deg, #f4c97b, #f7b267, #f28b82);
+            color: #4b3b28;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 0.9em;
             font-weight: 600;
             margin-top: 10px;
+            box-shadow: 0 2px 6px rgba(244, 201, 123, 0.4);
         }
 
         .section {
@@ -62,25 +64,25 @@
 
         .section-title {
             font-size: 1.5em;
-            color: #333;
+            color: #4b3b28;
             margin-bottom: 20px;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 3px solid #f7c59f;
             padding-bottom: 10px;
         }
 
         .upload-area {
-            border: 3px dashed #667eea;
+            border: 3px dashed #d9b382;
             border-radius: 12px;
             padding: 50px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: #f8f9ff;
+            background: #fffaf3;
         }
 
         .upload-area:hover {
-            border-color: #764ba2;
-            background: #f0f2ff;
+            border-color: #f4a261;
+            background: #fff3e0;
             transform: translateY(-2px);
         }
 
@@ -91,6 +93,7 @@
         .upload-icon {
             font-size: 4em;
             margin-bottom: 15px;
+            color: #c47f33;
         }
 
         .hidden {
@@ -104,7 +107,7 @@
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border-top: 4px solid #f4a261;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -124,7 +127,7 @@
             margin: 20px 0;
             justify-content: center;
             padding: 20px;
-            background: #f8f9ff;
+            background: #fffaf2;
             border-radius: 12px;
         }
 
@@ -135,12 +138,12 @@
             cursor: grab;
             border: 3px solid transparent;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
         }
 
         .patch:hover {
             transform: scale(1.1);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
         }
 
         .patch.used {
@@ -150,8 +153,8 @@
         }
 
         .ordering-zone {
-            background: white;
-            border: 3px dashed #667eea;
+            background: #fffdf8;
+            border: 3px dashed #e2c6a3;
             border-radius: 12px;
             padding: 20px;
             min-height: 120px;
@@ -170,7 +173,7 @@
             width: 60px;
             height: 60px;
             border-radius: 10px;
-            border: 3px solid #667eea;
+            border: 3px solid #e2c6a3;
             cursor: pointer;
             transition: all 0.2s ease;
             position: relative;
@@ -185,12 +188,12 @@
             width: 60px;
             height: 60px;
             border-radius: 10px;
-            border: 3px dashed #ccc;
-            background: #f5f5f5;
+            border: 3px dashed #d9b382;
+            background: #fdf4e6;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #999;
+            color: #b08968;
             font-size: 0.8em;
             font-weight: bold;
             cursor: pointer;
@@ -198,8 +201,8 @@
         }
 
         .empty-slot:hover {
-            background: #e8f0ff;
-            border-color: #667eea;
+            background: #fff0db;
+            border-color: #f4a261;
         }
 
         .patch-index {
@@ -208,7 +211,7 @@
             right: -8px;
             width: 24px;
             height: 24px;
-            background: #667eea;
+            background: #f4a261;
             color: white;
             border-radius: 50%;
             display: flex;
@@ -220,8 +223,8 @@
         }
 
         .button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #f4a261, #e9c46a);
+            color: #3b2d1f;
             border: none;
             padding: 14px 32px;
             font-size: 1em;
@@ -234,7 +237,7 @@
 
         .button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 16px rgba(244, 162, 97, 0.4);
         }
 
         .button:disabled {
@@ -243,12 +246,13 @@
         }
 
         .button-secondary {
-            background: linear-gradient(135deg, #6c757d, #5a6268);
+            background: linear-gradient(135deg, #d1ccc0, #bcb8ad);
+            color: #4b3b28;
         }
 
         .d15-graph-container {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: #fffdf8;
+            border: 2px solid #f0e0ca;
             border-radius: 12px;
             padding: 25px;
             margin: 25px 0;
@@ -261,12 +265,12 @@
         }
 
         .gemini-analysis {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border: 3px solid #4285F4;
+            background: linear-gradient(135deg, #fffaf3 0%, #f8eadd 100%);
+            border: 3px solid #f4a261;
             border-radius: 16px;
             padding: 30px;
             margin-top: 30px;
-            box-shadow: 0 8px 24px rgba(66, 133, 244, 0.15);
+            box-shadow: 0 8px 24px rgba(244, 162, 97, 0.15);
         }
 
         .gemini-header {
@@ -284,33 +288,33 @@
         }
 
         .gemini-header h2 {
-            color: #1a73e8;
+            color: #c47f33;
             font-size: 1.6em;
             margin: 0;
         }
 
         .gemini-content {
-            background: white;
+            background: #fffdf8;
             padding: 30px;
             border-radius: 12px;
             line-height: 1.8;
-            color: #333;
+            color: #4b3b28;
             max-height: 700px;
             overflow-y: auto;
             font-size: 0.95em;
         }
 
         .gemini-content h2 {
-            color: #1a73e8;
+            color: #e07a5f;
             font-size: 1.4em;
             margin-top: 25px;
             margin-bottom: 15px;
             padding-bottom: 8px;
-            border-bottom: 2px solid #e8f0fe;
+            border-bottom: 2px solid #f9dcc4;
         }
 
         .gemini-content h3 {
-            color: #34A853;
+            color: #f4a261;
             font-size: 1.2em;
             margin-top: 20px;
             margin-bottom: 10px;
@@ -333,7 +337,7 @@
         }
 
         .gemini-content strong {
-            color: #1a73e8;
+            color: #c47f33;
             font-weight: 600;
         }
 
@@ -350,18 +354,18 @@
         }
 
         .loading-gemini .spinner {
-            border-top-color: #4285F4;
+            border-top-color: #60615e;
         }
 
         .loading-gemini p {
-            color: #1a73e8;
+            color: #6e7451;
             font-size: 1.1em;
             margin-top: 15px;
         }
 
         .error-message {
             background: #ffebee;
-            color: #c62828;
+            color: #a6a98b;
             padding: 20px;
             border-radius: 8px;
             margin: 15px 0;
@@ -370,7 +374,7 @@
 
         .success-message {
             background: #e8f5e9;
-            color: #2e7d32;
+            color: #b0b6a2;
             padding: 20px;
             border-radius: 8px;
             margin: 15px 0;
@@ -378,29 +382,30 @@
         }
 
         .info-box {
-            background: #e3f2fd;
-            border-left: 5px solid #2196F3;
+            background: #fff7e6;
+            border-left: 5px solid #f4a261;
             padding: 20px;
             margin: 20px 0;
             border-radius: 8px;
         }
 
         .info-box strong {
-            color: #1976D2;
+            color: #b35c1e;
         }
 
         .disclaimer {
-            background: #fff3e0;
-            border: 2px solid #ff9800;
+            background: #fff5e1;
+            border: 2px solid #f4a261;
             border-radius: 8px;
             padding: 20px;
             margin-top: 30px;
             font-size: 0.9em;
             line-height: 1.6;
+            color: #5a4630;
         }
 
         .disclaimer strong {
-            color: #e65100;
+            color: #b35c1e;
         }
 
         @media (max-width: 768px) {
@@ -422,7 +427,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎨 D-15 Color Vision Test</h1>
+            <h1>D-15 Color Vision Test</h1>
             <p class="subtitle">AI-Powered Color Vision Analysis</p>
         </div>
 
@@ -430,7 +435,7 @@
         <div class="section" id="upload-section">
             <div class="section-title">Step 1: Upload Your Image</div>
             <div class="info-box">
-                <strong>📸 Instructions:</strong> Upload any colorful image (nature, art, photos). 
+                <strong>Instructions:</strong> Upload any colorful image (nature, art, photos). 
                 We'll extract 15 dominant colors and create a personalized D-15 color arrangement test.
             </div>
             <div class="upload-area" id="upload-area">
@@ -454,7 +459,7 @@
         <div class="section hidden" id="test-section">
             <div class="section-title">Step 2: Arrange the Colors</div>
             <div class="info-box">
-                <strong>🎯 How to complete the test:</strong>
+                <strong>How to complete the test:</strong>
                 <ol style="margin-left: 20px; margin-top: 10px;">
                     <li>Drag colors from the pool below one at a time</li>
                     <li>Arrange them horizontally from similar to similar hues</li>
@@ -481,7 +486,7 @@
             </div>
 
             <div style="font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em;">
-                Your Arrangement (<span id="progress-count">0</span>/<span id="total-count">14</span> placed):
+                Your Arrangement (<span id="progress-count">0</span>/<span id="total-count">15</span> placed):
             </div>
             <div class="ordering-zone">
                 <div class="ordered-patches" id="ordered-patches"></div>
@@ -491,13 +496,13 @@
 
             <div style="text-align: center; margin-top: 30px;">
                 <button class="button" id="submit-btn" disabled>
-                    🧪 Submit for AI Analysis
+                    Submit for AI Analysis
                 </button>
                 <button class="button button-secondary" id="reset-btn">
-                    🔄 Reset Arrangement
+                    Reset Arrangement
                 </button>
                 <button class="button button-secondary" id="upload-new-btn">
-                    📸 Upload New Image
+                    Upload New Image
                 </button>
             </div>
         </div>
@@ -508,7 +513,7 @@
             
             <div id="results-loading" class="loading-gemini">
                 <div class="spinner"></div>
-                <p>🤖 Gemini AI is analyzing your results...</p>
+                <p>Gemini AI is analyzing your results...</p>
                 <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
                     This may take 10-20 seconds
                 </p>
@@ -525,7 +530,7 @@
 
             <!-- Hue Spectrum Error Visualization -->
             <div id="hue-spectrum-container" class="d15-graph-container hidden">
-                <h3 style="color: #1a73e8; margin-bottom: 15px;">🌈 Hue Spectrum Analysis</h3>
+                <h3 style="color: #1a73e8; margin-bottom: 15px;">Hue Spectrum Analysis</h3>
                 <img id="hue-spectrum" alt="Hue Spectrum Error Visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                 <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
                     This shows where each color appears on the hue spectrum. Green borders = correct placement, Red borders = errors with arrows showing where they should be.
@@ -546,7 +551,7 @@
             </div>
 
             <div class="disclaimer">
-                <strong>⚠️ Medical Disclaimer:</strong> This is an AI-powered screening tool for educational purposes only. 
+                <strong>Medical Disclaimer:</strong> This is an AI-powered screening tool for educational purposes only. 
                 It is NOT a substitute for professional medical diagnosis. For accurate diagnosis and treatment, 
                 please consult a qualified ophthalmologist or optometrist. Color vision deficiencies affect approximately 
                 8% of males and 0.5% of females, and early detection helps with appropriate accommodations.
@@ -554,7 +559,7 @@
 
             <div style="text-align: center; margin-top: 30px;">
                 <button class="button" id="test-again-btn">
-                    🔁 Take Test Again
+                    Take Test Again
                 </button>
             </div>
         </div>
@@ -645,7 +650,7 @@
             testSection.classList.remove('hidden');
             resultsSection.classList.add('hidden');
             
-            // ✅ Initialize array with 16 positions: index 0 (reference) + indices 1-15 (colors to arrange)
+            // Initialize array with 16 positions: index 0 (reference) + indices 1-15 (colors to arrange)
             // Index 0 will always be the reference color (fixed)
             const referenceIndex = 0;
             userOrder = new Array(testSpec.n_colors + 1).fill(null);  // 16 total: 1 ref + 15 colors
@@ -666,7 +671,7 @@
         function renderPatchGrid() {
             patchGrid.innerHTML = '';
             
-            // 🎲 Use shuffled display order if available, otherwise use sequential order
+            // Use shuffled display order if available, otherwise use sequential order
             const displayOrder = testSpec.display_order || 
                                  testSpec.patch_configs.map((_, i) => i).filter(i => i !== 0);
             
@@ -711,7 +716,7 @@
             const container = document.getElementById('ordered-patches');
             container.innerHTML = '';
 
-            // ✅ Render slots 1-15 (skip index 0 which is the reference)
+            // Render slots 1-15 (skip index 0 which is the reference)
             for (let i = 1; i < userOrder.length; i++) {
                 const colorIndex = userOrder[i];
 
@@ -850,7 +855,7 @@
                 geminiSection.classList.remove('hidden');
                 geminiContent.innerHTML = `
                     <div class="error-message">
-                        <strong>⚠️ Gemini AI Analysis Unavailable</strong>
+                        <strong>Gemini AI Analysis Unavailable</strong>
                         <p>${data.gemini_analysis?.error || 'Please configure GEMINI_API_KEY in your backend.'}</p>
                         <p style="margin-top: 15px;">
                             Get your free API key: 
