@@ -246,6 +246,20 @@
             background: linear-gradient(135deg, #6c757d, #5a6268);
         }
 
+        .d15-graph-container {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .d15-graph-container h3 {
+            margin-top: 0;
+        }
+
         .gemini-analysis {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             border: 3px solid #4285F4;
@@ -500,6 +514,15 @@
                 </p>
             </div>
 
+            <!-- D-15 Graph -->
+            <div id="d15-graph-container" class="d15-graph-container hidden">
+                <h3 style="color: #1a73e8; margin-bottom: 15px;">📊 Your D-15 Test Result Graph</h3>
+                <img id="d15-graph" alt="D-15 Test Result Graph" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                    The circular diagram shows your color arrangement pattern. Line crossings indicate color confusion areas.
+                </p>
+            </div>
+
             <!-- Gemini AI Analysis -->
             <div id="gemini-analysis" class="gemini-analysis hidden">
                 <div class="gemini-header">
@@ -613,8 +636,12 @@
             testSection.classList.remove('hidden');
             resultsSection.classList.add('hidden');
             
-            // ✅ Use full color count (all 15 colors including reference)
-            userOrder = new Array(testSpec.n_colors).fill(null);
+            // ✅ Initialize array with 16 positions: index 0 (reference) + indices 1-15 (colors to arrange)
+            // Index 0 will always be the reference color (fixed)
+            const referenceIndex = 0;
+            userOrder = new Array(testSpec.n_colors + 1).fill(null);  // 16 total: 1 ref + 15 colors
+            userOrder[0] = referenceIndex;  // Set reference at index 0
+            
             document.getElementById('total-count').textContent = testSpec.n_colors;
             
             // Display reference color pad
@@ -630,12 +657,14 @@
         function renderPatchGrid() {
             patchGrid.innerHTML = '';
             
-            // ✅ Skip index 0 (reference color) - only show indices 1-15 (the 15 colors to arrange)
-            testSpec.patch_configs.forEach(config => {
-                // Skip the reference color at index 0
-                if (config.color_index === 0) {
-                    return; // Don't display reference in available colors
-                }
+            // 🎲 Use shuffled display order if available, otherwise use sequential order
+            const displayOrder = testSpec.display_order || 
+                                 testSpec.patch_configs.map((_, i) => i).filter(i => i !== 0);
+            
+            // Display colors in the shuffled order
+            displayOrder.forEach(colorIndex => {
+                const config = testSpec.patch_configs.find(c => c.color_index === colorIndex);
+                if (!config) return;
                 
                 const rgb = config.rgb;
                 const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
@@ -673,8 +702,8 @@
             const container = document.getElementById('ordered-patches');
             container.innerHTML = '';
 
-            // User slots
-            for (let i = 0; i < userOrder.length; i++) {
+            // ✅ Render slots 1-15 (skip index 0 which is the reference)
+            for (let i = 1; i < userOrder.length; i++) {
                 const colorIndex = userOrder[i];
 
                 if (colorIndex !== null && colorIndex !== undefined && colorIndex >= 0) {
@@ -684,7 +713,7 @@
                         const patch = document.createElement('div');
                         patch.className = 'ordered-patch';
                         patch.style.backgroundColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-                        patch.innerHTML = `<div class="patch-index">${i + 1}</div>`;
+                        patch.innerHTML = `<div class="patch-index">${i}</div>`;  // Show slot number 1-15
                         patch.onclick = () => removeFromSlot(i);
                         patch.addEventListener('dragover', (e) => e.preventDefault());
                         patch.addEventListener('drop', () => addToSlot(i));
@@ -693,7 +722,7 @@
                 } else {
                     const emptySlot = document.createElement('div');
                     emptySlot.className = 'empty-slot';
-                    emptySlot.textContent = i + 1;
+                    emptySlot.textContent = i;  // Show slot number 1-15
                     emptySlot.addEventListener('dragover', (e) => {
                         e.preventDefault();
                         emptySlot.style.transform = 'scale(1.1)';
@@ -709,11 +738,12 @@
                 }
             }
 
-            
-
-            const placedCount = userOrder.filter(x => x !== null && x !== undefined && x >= 0).length;
+            // Count placed colors (excluding index 0 reference)
+            const placedCount = userOrder.slice(1).filter(x => x !== null && x !== undefined && x >= 0).length;
             document.getElementById('progress-count').textContent = placedCount;
-            submitBtn.disabled = placedCount !== userOrder.length;
+            
+            // Enable submit when all 15 slots (1-15) are filled
+            submitBtn.disabled = placedCount !== testSpec.n_colors;
         }
 
         function addToSlot(slotIndex) {
@@ -782,6 +812,15 @@
 
         function displayResults(data) {
             document.getElementById('results-loading').classList.add('hidden');
+            
+            // Display D-15 Graph
+            if (data.d15_graph) {
+                const graphContainer = document.getElementById('d15-graph-container');
+                const graphImg = document.getElementById('d15-graph');
+                graphImg.src = `data:image/png;base64,${data.d15_graph}`;
+                graphContainer.classList.remove('hidden');
+                console.log('✓ D-15 graph displayed');
+            }
             
             const geminiSection = document.getElementById('gemini-analysis');
             const geminiContent = document.getElementById('gemini-content');

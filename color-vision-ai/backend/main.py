@@ -7,17 +7,19 @@ from io import BytesIO
 import traceback
 import numpy as np
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 import cv2
 import uvicorn
 import colorsys
 from typing import List
+import base64
 
 from color_extractor import ColorExtractor
 from test_generator import TestGenerator
 from error_analyzer import ErrorAnalyzer
 from gemini_analyzer import GeminiAnalyzer
+from d15_graph_generator import D15GraphGenerator
 
 
 app = FastAPI(
@@ -41,6 +43,7 @@ app.add_middleware(
 color_extractor = ColorExtractor(n_colors=15)
 test_generator = TestGenerator(test_type="patch_ordering")
 error_analyzer = ErrorAnalyzer()
+graph_generator = D15GraphGenerator()  # D-15 graph generator
 
 
 # Initialize Gemini analyzer (will fail gracefully if no API key)
@@ -148,6 +151,28 @@ async def upload_image(file: UploadFile = File(...)):
             # Generate test (now has 16 total: 1 reference duplicate + 15 original colors)
             test_spec = test_generator.generate_test(colors_with_reference_duplicate)
             
+            # 🔧 REBUILD patch_configs in PREDICTABLE ORDER!
+            # patch_configs[i] should contain the RGB for color index i
+            rgb_colors_with_ref = color_extractor.lab_to_rgb(colors_with_reference_duplicate)
+            test_spec["patch_configs"] = [
+                {
+                    "color_index": i,
+                    "lab": colors_with_reference_duplicate[i].tolist(),
+                    "rgb": rgb_colors_with_ref[i].tolist(),
+                    "luminance": float(colors_with_reference_duplicate[i, 0]),
+                }
+                for i in range(len(colors_with_reference_duplicate))
+            ]
+            
+            # 🎲 CREATE A SHUFFLED DISPLAY ORDER for the available colors
+            # This determines the order colors appear in the "Available Colors" section
+            # We shuffle indices 1-15 (skipping 0 which is the reference)
+            available_color_indices = list(range(1, len(colors_with_reference_duplicate)))
+            np.random.shuffle(available_color_indices)
+            test_spec["display_order"] = available_color_indices  # Shuffled order for display
+            
+            print(f"  Display order (shuffled): {available_color_indices[:5]}... (showing first 5)")
+            
             # n_colors = 15 (original colors for arrangement)
             test_spec["n_colors"] = int(len(dominant_colors_lab))
             test_spec["reference_index"] = 0  # Reference is at index 0
@@ -239,6 +264,14 @@ async def submit_response(data: SubmitRequest):
         # Convert to NumPy arrays
         user_order_array = np.array(user_order)
         dominant_colors_lab = np.array(session["dominant_colors_lab"])
+        
+        # Get the full colors array (including reference duplicate at index 0)
+        # This should match what was used to generate the test
+        ref_index = test_spec.get("reference_color", {}).get("color_index", 0)
+        colors_with_reference = np.vstack([
+            dominant_colors_lab[ref_index:ref_index+1],  # Reference at index 0
+            dominant_colors_lab                          # All 15 colors at indices 1-15
+        ])
 
         expected_len = int(test_spec.get("n_colors", len(dominant_colors_lab))) + 1
         if len(user_order) != expected_len:
@@ -250,16 +283,16 @@ async def submit_response(data: SubmitRequest):
         # full_user_order is the order submitted (includes reference at index 0)
         full_user_order = user_order_array.tolist()
 
-        # Use reference_order from test_spec if available (generator provides correct arrangement), else default
-        full_reference_order = (
-            test_spec.get("reference_order")
-            if test_spec.get("reference_order") is not None
-            else list(range(len(dominant_colors_lab)))
-        )
+        # Use reference_order from test_spec if available, else create default with reference at index 0
+        if test_spec.get("reference_order") is not None:
+            full_reference_order = test_spec.get("reference_order")
+        else:
+            # Create reference order: [0, 1, 2, 3, ..., 15] (16 items total)
+            full_reference_order = list(range(len(colors_with_reference)))
 
-        # Compute basic error metrics
+        # Compute basic error metrics using the full 16-color array
         error_metrics = error_analyzer.compute_error_metrics(
-            full_reference_order, full_user_order, dominant_colors_lab
+            full_reference_order, full_user_order, colors_with_reference
         )
         classification = error_analyzer.classify_deficiency(error_metrics)
         accuracy_score = error_analyzer.compute_color_accuracy_score(error_metrics)
@@ -274,7 +307,7 @@ async def submit_response(data: SubmitRequest):
                 gemini_analysis = gemini_analyzer.analyze_color_arrangement(
                     reference_order=full_reference_order,
                     user_order=full_user_order,
-                    reference_colors_lab=dominant_colors_lab.tolist(),
+                    reference_colors_lab=colors_with_reference.tolist(),  # Use full 16-color array
                     classification=classification,
                     accuracy_score=accuracy_score,
                 )
@@ -296,18 +329,62 @@ async def submit_response(data: SubmitRequest):
                 "error": "Gemini API key not configured",
             }
 
+        # 📊 Generate D-15 Graph
+        d15_graph_base64 = None
+        try:
+            # Build array of ALL colors from patch_configs (including reference)
+            # patch_configs[i] contains the RGB for color index i
+            all_patch_colors = []
+            for config in test_spec.get("patch_configs", []):
+                all_patch_colors.append(config["rgb"])
+            
+            # Get reference color (index 0)
+            reference_color_rgb = all_patch_colors[0] if len(all_patch_colors) > 0 else [128, 0, 0]
+            
+            # user_order = [0, idx1, idx2, ..., idx15]
+            # where idx1 is the COLOR INDEX placed at position 1, idx2 at position 2, etc.
+            # We need to skip the reference (index 0) and pass the color indices
+            user_arrangement = user_order[1:]  # [idx1, idx2, ..., idx15]
+            
+            print(f"\n📊 D-15 Graph Generation Debug:")
+            print(f"  Total colors in patch_configs: {len(all_patch_colors)}")
+            print(f"  Full user_order: {user_order}")
+            print(f"  User arrangement (positions 1-15): {user_arrangement}")
+            print(f"  Example: Position 1 has color index {user_arrangement[0]}")
+            print(f"  Example: Position 1 color RGB: {all_patch_colors[user_arrangement[0]] if user_arrangement[0] < len(all_patch_colors) else 'OUT OF RANGE'}")
+            
+            # Generate graph
+            # user_arrangement contains color indices that map to all_patch_colors
+            graph_bytes = graph_generator.generate_graph(
+                user_order=user_arrangement,  # Which color INDEX at each position
+                all_colors_rgb=all_patch_colors,  # ALL colors (including reference at index 0)
+                reference_color_rgb=reference_color_rgb,
+                show_confusion_lines=True,
+                title="Your D-15 Test Result"
+            )
+            
+            # Convert to base64 for JSON response
+            d15_graph_base64 = base64.b64encode(graph_bytes).decode('utf-8')
+            print(f"✓ D-15 graph generated successfully")
+            
+        except Exception as e:
+            print(f"⚠ D-15 graph generation failed: {e}")
+            traceback.print_exc()
+
         # Store results
         session["user_response"] = full_user_order
         session["classification"] = classification
         session["accuracy_score"] = accuracy_score
         session["report"] = report
         session["gemini_analysis"] = gemini_analysis
+        session["d15_graph"] = d15_graph_base64
 
         return JSONResponse({
             "classification": classification,
             "accuracy_score": accuracy_score,
             "report": report,
             "gemini_analysis": gemini_analysis,
+            "d15_graph": d15_graph_base64,  # Base64 encoded PNG
         })
 
     except HTTPException:
@@ -385,4 +462,4 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"Gemini AI: {'✓ Enabled' if gemini_analyzer else '⚠ Disabled (no API key)'}")
     print("=" * 60 + "\n")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)  # Disabled reload for stability
