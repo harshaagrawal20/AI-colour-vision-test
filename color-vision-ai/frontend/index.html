@@ -523,6 +523,15 @@
                 </p>
             </div>
 
+            <!-- Hue Spectrum Error Visualization -->
+            <div id="hue-spectrum-container" class="d15-graph-container hidden">
+                <h3 style="color: #1a73e8; margin-bottom: 15px;">🌈 Hue Spectrum Analysis</h3>
+                <img id="hue-spectrum" alt="Hue Spectrum Error Visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                    This shows where each color appears on the hue spectrum. Green borders = correct placement, Red borders = errors with arrows showing where they should be.
+                </p>
+            </div>
+
             <!-- Gemini AI Analysis -->
             <div id="gemini-analysis" class="gemini-analysis hidden">
                 <div class="gemini-header">
@@ -820,6 +829,15 @@
                 graphImg.src = `data:image/png;base64,${data.d15_graph}`;
                 graphContainer.classList.remove('hidden');
                 console.log('✓ D-15 graph displayed');
+            }
+            
+            // Display Hue Spectrum Error Visualization
+            if (data.hue_spectrum) {
+                const spectrumContainer = document.getElementById('hue-spectrum-container');
+                const spectrumImg = document.getElementById('hue-spectrum');
+                spectrumImg.src = `data:image/png;base64,${data.hue_spectrum}`;
+                spectrumContainer.classList.remove('hidden');
+                console.log('✓ Hue spectrum displayed');
             }
             
             const geminiSection = document.getElementById('gemini-analysis');

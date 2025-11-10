@@ -371,6 +371,34 @@ async def submit_response(data: SubmitRequest):
             print(f"⚠ D-15 graph generation failed: {e}")
             traceback.print_exc()
 
+        # 🎨 Generate Hue Spectrum Error Visualization
+        hue_spectrum_base64 = None
+        try:
+            # Same setup as D-15 graph
+            all_patch_colors = []
+            for config in test_spec.get("patch_configs", []):
+                all_patch_colors.append(config["rgb"])
+            
+            user_arrangement = user_order[1:]  # Skip reference
+            
+            print(f"\n🎨 Hue Spectrum Generation Debug:")
+            print(f"  Generating hue error visualization for {len(user_arrangement)} colors")
+            
+            # Generate hue spectrum visualization
+            hue_spectrum_bytes = graph_generator.generate_hue_error_visualization(
+                user_order=user_arrangement,  # Which color INDEX at each position
+                all_colors_rgb=all_patch_colors,  # ALL colors (including reference at index 0)
+                title="Your Color Arrangement Errors"
+            )
+            
+            # Convert to base64 for JSON response
+            hue_spectrum_base64 = base64.b64encode(hue_spectrum_bytes).decode('utf-8')
+            print(f"✓ Hue spectrum generated successfully")
+            
+        except Exception as e:
+            print(f"⚠ Hue spectrum generation failed: {e}")
+            traceback.print_exc()
+
         # Store results
         session["user_response"] = full_user_order
         session["classification"] = classification
@@ -378,6 +406,7 @@ async def submit_response(data: SubmitRequest):
         session["report"] = report
         session["gemini_analysis"] = gemini_analysis
         session["d15_graph"] = d15_graph_base64
+        session["hue_spectrum"] = hue_spectrum_base64
 
         return JSONResponse({
             "classification": classification,
@@ -385,6 +414,7 @@ async def submit_response(data: SubmitRequest):
             "report": report,
             "gemini_analysis": gemini_analysis,
             "d15_graph": d15_graph_base64,  # Base64 encoded PNG
+            "hue_spectrum": hue_spectrum_base64,  # Base64 encoded PNG
         })
 
     except HTTPException:
