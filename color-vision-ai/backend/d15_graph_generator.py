@@ -92,20 +92,29 @@ class D15GraphGenerator:
         # The colors are arranged by hue (0=ref, 1=darkest, 15=lightest)
         # We need to connect them in the order: which position has color 1, which has color 2, etc.
         
+        print(f"\n🎨 D-15 Graph Path Generation:")
+        print(f"  user_order (color indices at positions 1-15): {user_order}")
+        
         # Build a map: color_index -> position_number
         # user_order[position-1] = color_index, so we need to invert this
         color_to_position = {}
         for position_num in range(1, n_discs + 1):
             color_index = user_order[position_num - 1]
             color_to_position[color_index] = position_num
+            print(f"  Position {position_num} has color {color_index}")
         
+        print(f"\n  Connecting path in HUE order:")
         # Connect colors in hue order: color 1 -> color 2 -> color 3 -> ... -> color 15
         # Skip color 0 (reference) since it's not in the arrangement
         path_points = []
+        path_description = []
         for color_idx in range(1, n_discs + 1):  # Colors 1-15 in hue order
             if color_idx in color_to_position:
                 position_num = color_to_position[color_idx]
                 path_points.append(positions[position_num])
+                path_description.append(f"Color{color_idx}@Pos{position_num}")
+        
+        print(f"  Path: {' → '.join(path_description)}")
         
         # Close the loop back to first color
         if len(path_points) > 0:
@@ -116,11 +125,6 @@ class D15GraphGenerator:
                color='#000000', linewidth=4, alpha=0.85,  # Dark black, thick, high opacity
                zorder=5, linestyle='-')
         
-        # Debug: Print what's being displayed
-        print(f"\n🎨 D-15 Graph Debug:")
-        print(f"  user_order (color indices at each position): {user_order}")
-        print(f"  Total colors available: {len(all_colors_rgb)}")
-        
         # Draw color discs at each position
         for position_num in range(1, n_discs + 1):
             x, y = positions[position_num]
@@ -128,8 +132,6 @@ class D15GraphGenerator:
             # Get which color the user placed at this position
             # user_order[i] = color index placed at position (i+1)
             color_index = user_order[position_num - 1]  # 0-indexed list
-            
-            print(f"  Position {position_num}: color_index={color_index}, RGB={all_colors_rgb[color_index] if 0 <= color_index < len(all_colors_rgb) else 'OUT OF RANGE'}")
             
             # Get the actual color RGB
             if 0 <= color_index < len(all_colors_rgb):
