@@ -5,6 +5,7 @@
 A clinical-grade web application that detects color vision deficiencies (color blindness) through an interactive D-15 color arrangement test using AI and color science.
 
 ## Flowchart
+```mermaid
 flowchart TD
 
 %% ===================== FRONTEND =====================
@@ -59,7 +60,7 @@ B12 -->|Send test metrics| G1
 G4 -->|AI interpretation| B12
 B12 -->|Final JSON report| A4
 B12 --> DB
-
+```
 
 ## Features
 
@@ -182,4 +183,5 @@ For issues or questions, please open an issue on GitHub.
 
 **Version**: 1.0.0  
 **Last Updated**: November 4, 2025
+
 
