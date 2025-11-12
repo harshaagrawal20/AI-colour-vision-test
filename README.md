@@ -105,7 +105,7 @@ Backend runs on: http://localhost:8000
 ```bash
 cd frontend
 python -m http.server 8080
-```
+``` 
 Frontend runs on: http://localhost:8080
 
 3. Open your browser and go to: **http://localhost:8080**
@@ -175,6 +175,7 @@ For issues or questions, please open an issue on GitHub.
 
 **Version**: 1.0.0  
 **Last Updated**: November 4, 2025
+
 
 
 
