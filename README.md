@@ -6,61 +6,53 @@ A clinical-grade web application that detects color vision deficiencies (color b
 
 ## Flowchart
 ```mermaid
-flowchart TD
+%%{init: {'theme': 'base', 'themeVariables': {
+    'primaryColor': '#ffffff',
+    'lineColor': '#000000',
+    'textColor': '#000000',
+    'actorBorder': '#000000',
+    'actorBkg': '#ffffff'
+}}}%%
+sequenceDiagram
 
-%% ===================== FRONTEND =====================
-subgraph FRONTEND["🌐 Frontend (HTML, CSS, JS)"]
-A1[User uploads image via interface] --> A2[Preview & send image to backend via Fetch API]
-A2 --> A3[Display loading spinner and progress status]
-A3 --> A4[Receive processed test (15 color pads + reference color)]
-A4 --> A5[Render D-15 test grid for user interaction]
-A5 --> A6[User arranges colors and submits order]
-end
+    participant U as User (Client)
+    participant FE as Frontend (HTML/CSS/JS)
+    participant BE as Backend (FastAPI + Python)
+    participant CE as Color Engine (K-Means + LAB)
+    participant ANA as Analyzer (Hue & Error Metrics)
+    participant GEM as Gemini AI (Gemini 2.0 Flash)
 
-%% ===================== BACKEND =====================
-subgraph BACKEND["⚙️ Backend (FastAPI + Python)"]
-B1[/Receive uploaded image/]
-B1 --> B2[Preprocess image (resize, normalize)]
-B2 --> B3[Extract dominant colors using K-Means clustering (15 clusters)]
-B3 --> B4[Convert RGB → LAB → Hue values using colorsys]
-B4 --> B5[Select reference pad color (usually darkest or brown tone)]
-B5 --> B6[Sort colors by hue to generate D-15 color sequence]
-B6 --> B7[Return JSON response → frontend with test data]
-B7 --> B8[/Receive user arrangement/]
-B8 --> B9[Compare user order with true hue order]
-B9 --> B10[Compute angular difference per color]
-B10 --> B11[Generate confusion lines and total error score]
-B11 --> B12[Send metrics to GeminiAnalyzer class]
-end
+    %% ======= IMAGE UPLOAD & COLOR EXTRACTION =======
+    U->>FE: Upload image (JPG/PNG/WebP)
+    FE->>BE: POST /upload → send image file
+    BE->>CE: Preprocess image (resize, normalize)
+    CE->>CE: Extract 15 dominant colors (K-Means clustering)
+    CE->>CE: Convert RGB → LAB → Hue for color analysis
+    CE->>BE: Return 15 color pads + reference pad (brown/darkest)
+    BE-->>FE: JSON response → render D-15 test grid
+    FE-->>U: Display interactive color pads for arrangement
 
-%% ===================== GEMINI AI =====================
-subgraph GEMINI["🤖 Gemini AI Analyzer"]
-G1[Receive test metrics (errors, sequence deviation, hue difference)]
-G1 --> G2[Generate interpretation using Gemini 2.0 Flash model]
-G2 --> G3[Identify potential color vision deficiency type:
-- Normal
-- Protanomaly
-- Deuteranomaly
-- Tritanomaly]
-G3 --> G4[Return descriptive analysis + suggestions to backend]
-end
+    %% ======= USER ARRANGEMENT & EVALUATION =======
+    U->>FE: Drag and drop colors in desired order
+    FE->>BE: POST /submit-response → send user order
+    BE->>ANA: Compare user order with true hue sequence
+    ANA->>ANA: Compute angular deviation per pad
+    ANA->>ANA: Generate confusion lines & total error score
+    ANA-->>BE: Send metrics (error vectors + total score)
 
-%% ===================== DATABASE / STORAGE =====================
-subgraph DB["💾 Data & Storage (optional)"]
-D1[User session info]
-D2[Test results and timestamps]
-D3[Color palette history]
-end
+    %% ======= GEMINI AI ANALYSIS =======
+    BE->>GEM: Send test metrics & user performance summary
+    GEM->>GEM: Analyze hue confusion pattern
+    GEM->>GEM: Identify deficiency type
+    GEM-->>BE: Return interpretation + explanation + suggestions
+    BE-->>FE: Send final AI report (JSON)
 
-%% ===================== FLOW CONNECTIONS =====================
-A2 -->|POST /upload| B1
-B7 -->|Response: test colors| A4
-A6 -->|POST /submit-response| B8
-B12 -->|Send test metrics| G1
-G4 -->|AI interpretation| B12
-B12 -->|Final JSON report| A4
-B12 --> DB
+    %% ======= RESULT DISPLAY =======
+    FE-->>U: Display diagnosis
 ```
+
+---
+
 
 ## Features
 
@@ -183,5 +175,6 @@ For issues or questions, please open an issue on GitHub.
 
 **Version**: 1.0.0  
 **Last Updated**: November 4, 2025
+
 
 
